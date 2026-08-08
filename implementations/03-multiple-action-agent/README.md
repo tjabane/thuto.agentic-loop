@@ -1,9 +1,9 @@
-# Exercise 3: Choose between multiple actions
+# Choose between multiple actions
 
 ## Objective
 
-Build on the explicit Reason-Act-Observe loop from Exercise 2 by giving the
-agent more than one kind of action.
+Build an explicit Reason-Act-Observe loop in which the agent must choose between
+more than one kind of action.
 
 The agent must navigate a small, unknown maze, find a key, and unlock the exit.
 It receives information only through observations returned after its actions.
@@ -13,11 +13,9 @@ This exercise introduces the problem that tool-using agents must solve: not
 only deciding an action's input, but first deciding which action is appropriate.
 Do not use an LLM, prompts, an agent framework, or external packages.
 
-## What changes from Exercise 2
+## Why multiple actions matter
 
-In Exercise 2, every action is a guess. The policy only chooses a number.
-
-In this exercise, the policy must choose between different capabilities:
+The policy must choose between different capabilities:
 
 - inspect the current room;
 - move in a direction;

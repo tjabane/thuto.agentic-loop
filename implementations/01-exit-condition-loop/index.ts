@@ -1,5 +1,4 @@
 type Observation = "too low" | "too high" | "correct";
-
 const MAX_ATTEMPTS = 10;
 
 function findSecretNumber(
@@ -7,59 +6,40 @@ function findSecretNumber(
     minimum: number = 1,
     maximum: number = 100,
 ): number {
-    validateRange(secretNumber, minimum, maximum);
-
-    let lowerBound = minimum;
-    let upperBound = maximum;
-
-    for (let iteration = 1; iteration <= MAX_ATTEMPTS; iteration++) {
-        const guess = Math.floor((lowerBound + upperBound) / 2);
-        const observation = observeGuess(guess, secretNumber);
-
-        console.log(
-            `Iteration ${iteration}: guess ${guess} - ${observation}`,
-        );
-
-        if (observation === "correct") {
-            console.log(`Stopped: success. Correct guess: ${guess}`);
+    let attempts: number = 0;
+    let guess: number = getRandonNuberInclusive(minimum, maximum);
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        const observation: Observation = getObservation(guess, secretNumber);
+        console.log(`Iteration ${attempts}: guess ${guess} is ${observation}`);
+        console.log(`Current range: ${minimum} to ${maximum}`);
+        if(observation === "correct") {
             return guess;
         }
-
-        if (observation === "too low") {
-            lowerBound = guess + 1;
-        } else {
-            upperBound = guess - 1;
+        if (observation === "too high") {
+            maximum = guess - 1;
         }
+        if (observation === "too low") {
+            minimum = guess + 1;
+        }
+        guess = getRandonNuberInclusive(minimum, maximum);
+        attempts++;
     }
 
-    console.log(`Stopped: safety limit of ${MAX_ATTEMPTS} guesses reached.`);
-    return -1;
+    throw new Error(`Failed to find the secret number ${secretNumber} within ${MAX_ATTEMPTS} attempts.`);
 }
 
-function observeGuess(guess: number, secretNumber: number): Observation {
-    if (guess === secretNumber) {
-        return "correct";
+function getObservation(guess: number, secretNumber: number): Observation {
+    if (guess < secretNumber) {
+        return "too low";
     }
-
-    return guess < secretNumber ? "too low" : "too high";
+    if (guess > secretNumber) {
+        return "too high";
+    }
+    return "correct";
 }
 
-function validateRange(
-    secretNumber: number,
-    minimum: number,
-    maximum: number,
-): void {
-    if (![secretNumber, minimum, maximum].every(Number.isInteger)) {
-        throw new TypeError("The secret number and bounds must be whole numbers.");
-    }
-
-    if (minimum > maximum) {
-        throw new RangeError("The minimum cannot be greater than the maximum.");
-    }
-
-    if (secretNumber < minimum || secretNumber > maximum) {
-        throw new RangeError("The secret number must be within the search range.");
-    }
+function getRandonNuberInclusive(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 export { findSecretNumber };

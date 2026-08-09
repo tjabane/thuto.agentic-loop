@@ -5,8 +5,7 @@ small deterministic loop, turns actions into tools, introduces an LLM, and then
 uses the same harness to build a basic coding agent.
 
 ReAct is the first usable architecture, not the final destination. Later
-exercises add verification, visual world construction, memory, planning, and
-controlled self-improvement.
+exercises add verification and visual world construction.
 
 Research agents are deliberately not part of the main path. The two main
 applications are:
@@ -231,60 +230,6 @@ Limit revision rounds and measure whether the checker catches real defects.
 Model self-criticism is a fallible observation, not ground truth. Independent
 mathematical and structural checks remain authoritative where available.
 
-## Phase 4: Memory, planning, and controlled evolution
-
-### Exercise 12: Versioned skill library
-
-Persist successful, reusable strategies across coding and visual tasks. Examples
-include repository exploration patterns, verification recipes, coordinate-system
-layouts, vector diagrams, animation patterns, and misconception checks.
-
-Every stored skill should include provenance, version, applicable task types,
-validation evidence, and known failures. Retrieve only relevant skills and
-validate their result in the current environment. Durable memory must not turn
-one incorrect trajectory into a permanent rule.
-
-### Exercise 13: Planner, executor, and branching alternatives
-
-Plan complex tasks as independently verifiable steps and re-plan when execution
-or verification contradicts the plan. Generate multiple candidates only for
-difficult, consequential choices and select between them using explicit
-criteria.
-
-Compare planned and direct ReAct execution on the same task set. Keep planning
-only where it improves success enough to justify its additional latency and
-cost.
-
-### Exercise 14: Specialized agent team
-
-Compare a single agent with specialists such as an explorer, implementer,
-verifier, mathematician, visual composer, or pedagogy checker. Give each agent a
-clear context and responsibility.
-
-Use the same task set and measure correctness, regressions, user preference,
-latency, and cost. Keep the multi-agent design only where it demonstrably
-improves results.
-
-### Exercise 15: Evaluation-driven self-improvement
-
-Collect trajectories from earlier exercises, classify recurring failures, and
-propose changes to prompts, tools, policies, or reusable skills. Evaluate one
-bounded candidate change at a time on fixed training and held-out task sets.
-
-```text
-run tasks
--> collect evidence
--> identify a recurring failure
--> propose one bounded change
--> evaluate against baselines and held-out tasks
--> promote or reject
-```
-
-Promote a change only when it improves defined metrics without unacceptable
-regressions. The agent must not freely rewrite its production harness.
-Evolution happens through versioned candidates, sandboxed evaluation, explicit
-promotion rules, and rollback.
-
 ## The continuing thread
 
 The same control loop remains visible throughout the roadmap:
@@ -302,6 +247,4 @@ explicit safe loops
 -> repository inspection and editing
 -> external verification
 -> visual world construction
--> memory and planning
--> measured self-improvement
 ```

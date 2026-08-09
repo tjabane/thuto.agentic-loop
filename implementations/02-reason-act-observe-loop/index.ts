@@ -30,16 +30,12 @@ class Agent {
         return Math.floor((low + high) / 2);
     }
 
-    public isRunning(): boolean {
-        return this.state.status === "running";
-    }
-
-    public GetNextAction(): Action {
+    private GetNextAction(): Action {
         const value = this.reason();
         return { value, type: "guess" };
     }
 
-    public UpdateState(action: Action, observation: Observation): void {
+    private UpdateState(action: Action, observation: Observation): void {
         let [low, high] = this.state.interval;
         this.state.history.push({ action, observation });
 
@@ -58,6 +54,25 @@ class Agent {
         }
 
         this.state.interval = [low, high];
+    }
+
+    public run(environment: Environment, maxAttempts: number): number {
+        let attemptsRemaining = maxAttempts;
+        let lastAction: Action | undefined;
+
+        while (this.state.status === "running" && attemptsRemaining > 0) {
+            const action = this.GetNextAction();
+            lastAction = action;
+            const observation = environment.GetObservation(action);
+            this.UpdateState(action, observation);
+            attemptsRemaining--;
+        }
+
+        if (this.state.status === "succeeded" && lastAction) {
+            return lastAction.value;
+        }
+
+        return -1;
     }
 }
 
@@ -79,31 +94,4 @@ class Environment {
     }
 }
 
-function findSecretNumber(secretNumber: number): number {
-    let maxAttempts = 10;
-    const initialState: State = {
-        interval: [1, 100],
-        history: [],
-        status: "running"
-    };
-    const agent = new Agent(initialState);
-    const environment = new Environment(secretNumber);
-    let lastAction: Action | undefined;
-
-    while(agent.isRunning() && maxAttempts > 0)
-    {
-        const action = agent.GetNextAction();
-        lastAction = action;
-        const observation = environment.GetObservation(action);
-        agent.UpdateState(action, observation);
-        maxAttempts--;
-    }
-
-    if (!agent.isRunning() && lastAction) {
-        return lastAction.value;
-    }
-
-    return -1; // Return -1 if the secret number is not found within the maximum attempts
-}
-
-export { findSecretNumber };
+export { Agent, Environment };

@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "types": ["node"],
-    "rootDir": "implementations",
+    "rootDir": "foundations/implementations",
     "outDir": "dist",
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -15,6 +15,6 @@
     "sourceMap": true,
     "declaration": true
   },
-  "include": ["implementations/**/*.ts"],
+  "include": ["foundations/implementations/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

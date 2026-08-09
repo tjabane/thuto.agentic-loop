@@ -1,15 +1,17 @@
 # Thuto Agentic Loop
 
-A workspace for studying agentic loops and implementing the ideas from first
-principles.
+A workspace containing separate projects for learning agent foundations and
+exploring a basic coding agent.
 
-## Repository map
+## Projects
 
-- `papers/` contains the original papers.
-- `notes/` contains reading notes for individual papers.
-- `report/` contains the final synthesis.
-- `implementations/` contains the executable experiments.
-- `docs/` contains supporting guides and longer-form reference material.
+- [`foundations/`](./foundations/README.md) develops the agent loop from first
+  principles using deterministic and LLM-driven exercises.
+- [`basic-coding-agent/`](./basic-coding-agent/README.md) is the separate
+  follow-on project for applying the loop to repository work.
+
+Interactive mathematics and physics work belongs in the separate
+`agent.strang` repository.
 
 ## Resources
 

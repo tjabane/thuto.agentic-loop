@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "tsx --test implementations/01-exit-condition-loop/index.test.ts",
+    "test": "tsx --test foundations/implementations/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

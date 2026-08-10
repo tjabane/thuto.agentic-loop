@@ -4,7 +4,7 @@ type Position = {
 };
 
 type Observation = {
-    currentPosition: Position;
+    position: Position;
     isBlocked: boolean;
     hasKey: boolean;
     isExit: boolean;

@@ -1,10 +1,10 @@
 "use strict";
 (() => {
   // foundations/implementations/03-multiple-action-agent/agent.ts
-  var Agent = class {
+  var Agent = class _Agent {
     position;
     path;
-    observationHistory;
+    observations;
     blockedCells;
     moveHistory;
     hasKey;
@@ -18,7 +18,7 @@
       this.position = position;
       this.path = [];
       this.moveHistory = [];
-      this.observationHistory = [];
+      this.observations = /* @__PURE__ */ new Set();
       this.blockedCells = /* @__PURE__ */ new Set();
       this.hasKey = false;
       this.cellHasKey = false;
@@ -29,12 +29,17 @@
       this.IsRunning = true;
     }
     InspectCell(environment2) {
+      if (_Agent.hasBeenHereBefore(this.position, this.observations))
+        return;
       let currentCell = environment2.viewCell(this.position);
       this.hasKey = currentCell.hasKey;
       this.cellIsLocked = currentCell.isUnlocked;
       this.isAtExist = currentCell.isExit;
       this.path.push(this.position);
-      this.observationHistory.push(currentCell);
+      this.observations.add(currentCell);
+    }
+    static hasBeenHereBefore(currentPosition, pastPositions) {
+      return [...pastPositions].some((seen) => seen.position.x === currentPosition.x && seen.position.y === currentPosition.y);
     }
     think() {
       if (this.hasKey && this.cellIsLocked && this.isAtExist) {
@@ -49,20 +54,19 @@
       return { type: "move", direction: this.getRandomDirection() };
     }
     getRandomDirection() {
-      const directions = ["up", "down", "left", "right"];
-      for (const direction of directions) {
+      let directions = ["up", "down", "left", "right"];
+      for (const direction in directions) {
         if (this.moveHistory.length > 0) {
           const lastMove = this.moveHistory[this.moveHistory.length - 1];
-          if (lastMove.direction === direction) {
-            directions.splice(directions.indexOf(direction), 1);
+          if (lastMove?.direction === direction && this.position === lastMove?.position) {
+            directions = directions.splice(directions.indexOf(direction), 1);
           }
-          return directions[Math.floor(Math.random() * directions.length)];
         }
+        const gotoDirection = directions[Math.floor(Math.random() * directions.length)];
+        console.log(`next random direction ${gotoDirection}`);
+        return gotoDirection;
       }
-      throw new Error("No valid directions available");
-    }
-    isCellBlocked(position, direction) {
-      return false;
+      throw Error("No validate direction Available");
     }
     ActOnAction(action, environment2) {
       switch (action.type) {
@@ -173,12 +177,15 @@
     }
     viewCell(location) {
       return {
-        currentPosition: location,
+        position: location,
         isBlocked: this.maze[location.y][location.x] === 1,
         hasKey: this.keyPosition.x === location.x && this.keyPosition.y === location.y && !this.isKeyCollected,
         isExit: this.exitPosition.x === location.x && this.exitPosition.y === location.y,
         isUnlocked: this.isExitLocked
       };
+    }
+    getAgentPostion() {
+      return this.agentPosition;
     }
   };
 
@@ -274,8 +281,8 @@
     automaticSteps += 1;
     const succeeded = thinkAndAct();
     const current = snapshot();
-    if (!succeeded || !current.IsRunning || automaticSteps >= 25) {
-      const message = automaticSteps >= 25 ? "Automatic run stopped at 25 actions" : void 0;
+    if (!succeeded || !current.IsRunning || automaticSteps >= 50) {
+      const message = automaticSteps >= 50 ? "Automatic run stopped at 50 actions" : void 0;
       stopAutomaticRun(message);
       return;
     }

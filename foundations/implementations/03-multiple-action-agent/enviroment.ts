@@ -65,12 +65,16 @@ class Environment {
 
     viewCell(location: Position): Observation {
         return {
-            currentPosition: location,
+            position: location,
             isBlocked: this.maze[location.y][location.x] === 1,
             hasKey: this.keyPosition.x === location.x && this.keyPosition.y === location.y && !this.isKeyCollected,
             isExit: this.exitPosition.x === location.x && this.exitPosition.y === location.y,
             isUnlocked: this.isExitLocked
         };
+    }
+
+    getAgentPostion():Position {
+        return this.agentPosition;
     }
 }
 

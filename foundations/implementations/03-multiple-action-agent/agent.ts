@@ -4,7 +4,7 @@ import { Environment } from "./enviroment.js";
 class Agent {
     private position: Position;
     private path: Position[];
-    private observationHistory: Observation[];
+    private observations: Set<Observation>;
     private blockedCells: Set<Position>;
     private moveHistory: MoveHistory[];
     private hasKey: boolean;
@@ -19,7 +19,7 @@ class Agent {
         this.position = position;
         this.path = [];
         this.moveHistory = [];
-        this.observationHistory = [];
+        this.observations = new Set<Observation>;
         this.blockedCells = new Set<Position>();
         this.hasKey = false;
         this.cellHasKey = false;
@@ -31,12 +31,20 @@ class Agent {
     }
 
     public InspectCell(environment: Environment): void {
+        if(Agent.hasBeenHereBefore(this.position, this.observations))
+            return;
         let currentCell = environment.viewCell(this.position);
         this.hasKey = currentCell.hasKey;
         this.cellIsLocked = currentCell.isUnlocked;
         this.isAtExist = currentCell.isExit;
         this.path.push(this.position);
-        this.observationHistory.push(currentCell);
+        this.observations.add(currentCell);
+    }
+
+
+    private static hasBeenHereBefore(currentPosition: Position, pastPositions: Set<Observation>): boolean
+    {
+        return [...pastPositions].some(seen => seen.position.x === currentPosition.x && seen.position.y === currentPosition.y);
     }
 
     public think(): Action {
@@ -53,22 +61,20 @@ class Agent {
     }
 
     private getRandomDirection(): Direction {
-        const directions: Direction[] = ["up", "down", "left", "right"];
-        for (const direction of directions) {
+        let directions: Direction[] = ["up", "down", "left", "right"];
+        for(const direction in directions)
+        {
             if(this.moveHistory.length > 0) {
                 const lastMove = this.moveHistory[this.moveHistory.length - 1];
-                if (lastMove.direction === direction) {
-                    directions.splice(directions.indexOf(direction), 1);
+                if (lastMove?.direction === direction && this.position === lastMove?.position) {
+                    directions = directions.splice(directions.indexOf(direction), 1);
                 }
-                return directions[Math.floor(Math.random() * directions.length)];
             }
+            const gotoDirection = directions[Math.floor(Math.random() * directions.length)];
+            console.log(`next random direction ${gotoDirection}`);
+            return gotoDirection;
         }
-        throw new Error("No valid directions available");
-    }
-
-    private isCellBlocked(position: Position, direction: Direction): boolean {
-        // Implementation for checking if a cell is blocked
-        return false;
+        throw Error("No validate direction Available");
     }
 
     public ActOnAction(action: Action, environment: Environment): void {

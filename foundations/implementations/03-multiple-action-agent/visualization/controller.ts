@@ -113,8 +113,8 @@ function runAutomaticStep(): void {
     const succeeded = thinkAndAct();
     const current = snapshot();
 
-    if (!succeeded || !current.IsRunning || automaticSteps >= 25) {
-        const message = automaticSteps >= 25 ? "Automatic run stopped at 25 actions" : undefined;
+    if (!succeeded || !current.IsRunning || automaticSteps >= 50) {
+        const message = automaticSteps >= 50 ? "Automatic run stopped at 50 actions" : undefined;
         stopAutomaticRun(message);
         return;
     }

@@ -1,9 +1,15 @@
 # Maze visualization
 
-Open `index.html` in a browser. The controls only preview visual state changes;
-they do not choose actions or implement the exercise's agent policy.
+Open `index.html` in a browser. Its controls call the current TypeScript
+`Agent` and `Environment` instances and then reflect their state in the maze.
 
-Your agent code can drive the animation through the global presentation API:
+Rebuild the browser controller after changing the TypeScript implementation:
+
+```text
+node_modules/.bin/esbuild foundations/implementations/03-multiple-action-agent/visualization/controller.ts --bundle --platform=browser --format=iife --outfile=foundations/implementations/03-multiple-action-agent/visualization/app.js
+```
+
+The animation is also available through the global presentation API:
 
 ```javascript
 mazeVisualizer.move("east");

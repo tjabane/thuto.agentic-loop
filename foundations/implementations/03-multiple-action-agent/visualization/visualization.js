@@ -102,12 +102,6 @@
     log("Visualization reset");
   }
 
-  document.querySelectorAll("[data-direction]").forEach((button) => {
-    button.addEventListener("click", () => move(button.dataset.direction));
-  });
-  document.getElementById("takeButton").addEventListener("click", takeKey);
-  document.getElementById("unlockButton").addEventListener("click", unlockExit);
-  document.getElementById("resetButton").addEventListener("click", reset);
   window.addEventListener("resize", render);
 
   // Presentation-only API. Your agent can call these methods after each action.
@@ -115,6 +109,13 @@
     move,
     takeKey,
     unlockExit,
+    showMessage(message) {
+      setStatus(message);
+      log(message);
+    },
+    showBlockedMove(direction) {
+      bump(`Move ${direction}: blocked`);
+    },
     reset,
     setState(nextState) {
       state = { ...state, ...nextState };

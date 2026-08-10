@@ -44,7 +44,7 @@
         </div>
 
         <div class="controls" aria-label="Visualization controls">
-          <h2>Manual preview</h2>
+          <h2>Current implementation</h2>
           <div class="direction-pad">
             <button type="button" data-direction="north" aria-label="Move north">↑</button>
             <button type="button" data-direction="west" aria-label="Move west">←</button>
@@ -52,6 +52,9 @@
             <button type="button" data-direction="east" aria-label="Move east">→</button>
           </div>
           <div class="action-buttons">
+            <button id="autoButton" type="button">Run agent</button>
+            <button id="inspectButton" type="button">Inspect cell</button>
+            <button id="thinkButton" type="button">Think + act</button>
             <button id="takeButton" type="button">Take key</button>
             <button id="unlockButton" type="button">Unlock exit</button>
             <button id="resetButton" type="button" class="secondary">Reset</button>
@@ -66,5 +69,6 @@
     </section>
   </main>
   <script src="visualization.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

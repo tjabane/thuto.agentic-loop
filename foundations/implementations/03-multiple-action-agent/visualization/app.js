@@ -32,7 +32,7 @@
       if (_Agent.hasBeenHereBefore(this.position, this.observations))
         return;
       let currentCell = environment2.viewCell(this.position);
-      this.hasKey = currentCell.hasKey;
+      this.cellHasKey = currentCell.hasKey;
       this.cellIsLocked = currentCell.isUnlocked;
       this.isAtExist = currentCell.isExit;
       this.path.push(this.position);
@@ -42,6 +42,8 @@
       return [...pastPositions].some((seen) => seen.position.x === currentPosition.x && seen.position.y === currentPosition.y);
     }
     think() {
+      console.log("this.hasKey", this.hasKey);
+      console.log("this.cellHasKey", this.cellHasKey);
       if (this.hasKey && this.cellIsLocked && this.isAtExist) {
         return { type: "unlockExit" };
       }

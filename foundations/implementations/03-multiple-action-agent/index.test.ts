@@ -14,7 +14,6 @@ test("runs the current starting-room inspection logic", () => {
         agent.ActOnAction(action, environment)
         const agentLocation = environment.getAgentPostion();
     }
-
 });
 
 test("agent picks up the key after inspecting the key cell", () => {

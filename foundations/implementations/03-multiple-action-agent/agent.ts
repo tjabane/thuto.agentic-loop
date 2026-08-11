@@ -34,7 +34,7 @@ class Agent {
         if(Agent.hasBeenHereBefore(this.position, this.observations))
             return;
         let currentCell = environment.viewCell(this.position);
-        this.hasKey = currentCell.hasKey;
+        this.cellHasKey = currentCell.hasKey;
         this.cellIsLocked = currentCell.isUnlocked;
         this.isAtExist = currentCell.isExit;
         this.path.push(this.position);
@@ -48,6 +48,8 @@ class Agent {
     }
 
     public think(): Action {
+        console.log("this.hasKey", this.hasKey)
+        console.log("this.cellHasKey", this.cellHasKey)
         if (this.hasKey && this.cellIsLocked && this.isAtExist) {
             return { type: "unlockExit" };
         }
@@ -71,7 +73,6 @@ class Agent {
                 }
             }
             const gotoDirection = directions[Math.floor(Math.random() * directions.length)];
-            console.log(`next random direction ${gotoDirection}`);
             return gotoDirection;
         }
         throw Error("No validate direction Available");

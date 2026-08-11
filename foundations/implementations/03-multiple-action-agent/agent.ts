@@ -5,7 +5,7 @@ class Agent {
     private position: Position;
     private path: Position[];
     private observations: Set<Observation>;
-    private blockedCells: Set<Position>;
+    private blockedCells: Set<string>;
     private moveHistory: MoveHistory[];
     private hasKey: boolean;
     private cellHasKey: boolean;
@@ -20,7 +20,7 @@ class Agent {
         this.path = [];
         this.moveHistory = [];
         this.observations = new Set<Observation>;
-        this.blockedCells = new Set<Position>();
+        this.blockedCells = new Set<string>();
         this.hasKey = hasKey;
         this.cellHasKey = false;
         this.cellIsLocked = false;
@@ -53,19 +53,45 @@ class Agent {
     }
 
     private getRandomDirection(): Direction {
-        let directions: Direction[] = ["up", "down", "left", "right"];
-        for(const direction in directions)
+        let directions: Direction[] = this.getValidDirections();
+        if(directions.length === 0)
         {
-            if(this.moveHistory.length > 0) {
-                const lastMove = this.moveHistory[this.moveHistory.length - 1];
-                if (lastMove?.direction === direction && this.position === lastMove?.position) {
-                    directions = directions.splice(directions.indexOf(direction), 1);
-                }
-            }
-            const gotoDirection = directions[Math.floor(Math.random() * directions.length)];
-            return gotoDirection;
+            throw Error("No validate direction Available");
         }
-        throw Error("No validate direction Available");
+        else {
+            return directions[Math.floor(Math.random() * directions.length)];
+        }
+    }
+
+    private cellKey(cell: Position): string {
+        return `${cell.x},${cell.y}`;
+    }
+
+    private getNeighbour(direction: Direction): Position {
+        const currentPosition: Position = this.position;
+        const neighbours: Record<Direction, Position> = {
+            up: { x: currentPosition.x, y: currentPosition.y - 1 },
+            down: { x: currentPosition.x, y: currentPosition.y + 1 },
+            left: { x: currentPosition.x - 1, y: currentPosition.y },
+            right: { x: currentPosition.x + 1, y: currentPosition.y }
+        };
+
+        return neighbours[direction];
+    }
+
+    private getValidDirections(): Direction[] {
+        let directions: Direction[] = ["up", "down", "left", "right"];
+
+        for (const direction of directions)
+        {
+            const neighbour = this.getNeighbour(direction);
+            const isBlocked = this.blockedCells.has(this.cellKey(neighbour));
+            if (isBlocked) {
+                directions = directions.filter(candidate => candidate !== direction);
+            }
+        }
+
+        return directions;
     }
 
     public ActOnAction(action: Action, environment: Environment): void {
@@ -98,7 +124,7 @@ class Agent {
         }
         else {
             console.log("Move blocked or out of bounds.");
-            this.blockedCells.add(this.position);
+            this.blockedCells.add(this.cellKey(this.getNeighbour(direction)));
         }
     }
 

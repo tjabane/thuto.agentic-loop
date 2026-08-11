@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   // foundations/implementations/03-multiple-action-agent/agent.ts
-  var Agent = class _Agent {
+  var Agent = class {
     position;
     path;
     observations;
@@ -14,13 +14,13 @@
     isAtExist;
     hasUnlockedExit;
     IsRunning;
-    constructor(position) {
+    constructor(position, hasKey = false) {
       this.position = position;
       this.path = [];
       this.moveHistory = [];
       this.observations = /* @__PURE__ */ new Set();
       this.blockedCells = /* @__PURE__ */ new Set();
-      this.hasKey = false;
+      this.hasKey = hasKey;
       this.cellHasKey = false;
       this.cellIsLocked = false;
       this.hasExited = false;
@@ -29,8 +29,6 @@
       this.IsRunning = true;
     }
     InspectCell(environment2) {
-      if (_Agent.hasBeenHereBefore(this.position, this.observations))
-        return;
       let currentCell = environment2.viewCell(this.position);
       this.cellHasKey = currentCell.hasKey;
       this.cellIsLocked = currentCell.isUnlocked;
@@ -38,12 +36,7 @@
       this.path.push(this.position);
       this.observations.add(currentCell);
     }
-    static hasBeenHereBefore(currentPosition, pastPositions) {
-      return [...pastPositions].some((seen) => seen.position.x === currentPosition.x && seen.position.y === currentPosition.y);
-    }
     think() {
-      console.log("this.hasKey", this.hasKey);
-      console.log("this.cellHasKey", this.cellHasKey);
       if (this.hasKey && this.cellIsLocked && this.isAtExist) {
         return { type: "unlockExit" };
       }
@@ -65,7 +58,6 @@
           }
         }
         const gotoDirection = directions[Math.floor(Math.random() * directions.length)];
-        console.log(`next random direction ${gotoDirection}`);
         return gotoDirection;
       }
       throw Error("No validate direction Available");
@@ -133,9 +125,9 @@
     exitPosition;
     isKeyCollected;
     isExitLocked;
-    constructor(numberOfRows, numberOfColumns, blockedCells2, keyPosition2, exitPosition2) {
+    constructor(numberOfRows, numberOfColumns, blockedCells2, keyPosition2, exitPosition2, agentPosition = { x: 0, y: 0 }) {
       this.maze = Array(numberOfRows).fill(null).map(() => Array(numberOfColumns).fill(0));
-      this.agentPosition = { x: 0, y: 0 };
+      this.agentPosition = { ...agentPosition };
       this.keyPosition = keyPosition2;
       this.exitPosition = exitPosition2;
       this.isKeyCollected = false;
@@ -239,6 +231,7 @@
   }
   function thinkAndAct() {
     try {
+      agent.InspectCell(environment);
       const action = agent.think();
       window.mazeVisualizer.showMessage(`Agent chose: ${action.type}`);
       runAction(action);

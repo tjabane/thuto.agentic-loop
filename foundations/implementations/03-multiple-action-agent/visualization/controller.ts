@@ -62,6 +62,7 @@ function runAction(action: Action): void {
 
 function thinkAndAct(): boolean {
     try {
+        agent.InspectCell(environment);
         const action = agent.think();
         window.mazeVisualizer.showMessage(`Agent chose: ${action.type}`);
         runAction(action);

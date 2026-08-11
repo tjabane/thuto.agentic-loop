@@ -39,12 +39,6 @@ class Agent {
         this.observations.add(currentCell);
     }
 
-
-    private static hasBeenHereBefore(currentPosition: Position, pastPositions: Set<Observation>): boolean
-    {
-        return [...pastPositions].some(seen => seen.position.x === currentPosition.x && seen.position.y === currentPosition.y);
-    }
-
     public think(): Action {
         if (this.hasKey && this.cellIsLocked && this.isAtExist) {
             return { type: "unlockExit" };

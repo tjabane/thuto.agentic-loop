@@ -9,9 +9,9 @@ class Environment {
     private isKeyCollected: boolean;
     private isExitLocked: boolean;
 
-    constructor(numberOfRows: number, numberOfColumns: number, blockedCells: Position[], keyPosition: Position, exitPosition: Position) {
+    constructor(numberOfRows: number, numberOfColumns: number, blockedCells: Position[], keyPosition: Position, exitPosition: Position, agentPosition: Position = { x: 0, y: 0 }) {
         this.maze = Array(numberOfRows).fill(null).map(() => Array(numberOfColumns).fill(0));
-        this.agentPosition = { x: 0, y: 0 };
+        this.agentPosition = { ...agentPosition };
         this.keyPosition = keyPosition;
         this.exitPosition = exitPosition;
         this.isKeyCollected = false;

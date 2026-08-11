@@ -1,4 +1,4 @@
-import { Direction, Direction, Observation, Position, Action, MoveHistory } from "./types.js";
+import { Direction, Observation, Position, Action, MoveHistory } from "./types.js";
 import { Environment } from "./enviroment.js";
 
 class Agent {
@@ -15,13 +15,13 @@ class Agent {
     private hasUnlockedExit: boolean;
     private IsRunning: boolean;
 
-    constructor(position: Position) {
+    constructor(position: Position, hasKey: boolean = false) {
         this.position = position;
         this.path = [];
         this.moveHistory = [];
         this.observations = new Set<Observation>;
         this.blockedCells = new Set<Position>();
-        this.hasKey = false;
+        this.hasKey = hasKey;
         this.cellHasKey = false;
         this.cellIsLocked = false;
         this.hasExited = false;
@@ -31,8 +31,6 @@ class Agent {
     }
 
     public InspectCell(environment: Environment): void {
-        if(Agent.hasBeenHereBefore(this.position, this.observations))
-            return;
         let currentCell = environment.viewCell(this.position);
         this.cellHasKey = currentCell.hasKey;
         this.cellIsLocked = currentCell.isUnlocked;
@@ -48,8 +46,6 @@ class Agent {
     }
 
     public think(): Action {
-        console.log("this.hasKey", this.hasKey)
-        console.log("this.cellHasKey", this.cellHasKey)
         if (this.hasKey && this.cellIsLocked && this.isAtExist) {
             return { type: "unlockExit" };
         }

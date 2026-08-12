@@ -1,8 +1,10 @@
 import { Direction, Observation, Position, Action, MoveHistory } from "./types.js";
 import { Environment } from "./enviroment.js";
+import { makeCellKey } from "./maze-utils.js";
 
 class Agent {
     private position: Position;
+    private ExistLocation: Position;
     private path: Position[];
     private observations: Set<Observation>;
     private blockedCells: Set<string>;
@@ -10,13 +12,14 @@ class Agent {
     private hasKey: boolean;
     private cellHasKey: boolean;
     private cellIsLocked: boolean;
-    private hasExited: boolean;
     private isAtExist: boolean;
+    private hasExited: boolean;
     private hasUnlockedExit: boolean;
     private IsRunning: boolean;
 
     constructor(position: Position, hasKey: boolean = false) {
         this.position = position;
+        this.ExistLocation = {x: -1, y: -1};
         this.path = [];
         this.moveHistory = [];
         this.observations = new Set<Observation>;
@@ -24,22 +27,27 @@ class Agent {
         this.hasKey = hasKey;
         this.cellHasKey = false;
         this.cellIsLocked = false;
-        this.hasExited = false;
         this.isAtExist = false;
+        this.hasExited = false;
         this.hasUnlockedExit = false;
         this.IsRunning = true;
     }
 
-    public InspectCell(environment: Environment): void {
+    private observeCell(environment: Environment): void {
         let currentCell = environment.viewCell(this.position);
         this.cellHasKey = currentCell.hasKey;
         this.cellIsLocked = currentCell.isUnlocked;
         this.isAtExist = currentCell.isExit;
-        this.path.push(this.position);
+        
         this.observations.add(currentCell);
+        if(currentCell.isExit && !this.hasKey)
+        {
+            this.ExistLocation = currentCell.position
+        }
+        
     }
 
-    public think(): Action {
+    private think(): Action {
         if (this.hasKey && this.cellIsLocked && this.isAtExist) {
             return { type: "unlockExit" };
         }
@@ -54,6 +62,11 @@ class Agent {
 
     private getRandomDirection(): Direction {
         let directions: Direction[] = this.getValidDirections();
+        let newPaths = this.getUnExploredCells(directions);
+        if(newPaths.length > 0)
+        {
+            return newPaths[Math.floor(Math.random() * newPaths.length)];
+        }
         if(directions.length === 0)
         {
             throw Error("No validate direction Available");
@@ -63,10 +76,40 @@ class Agent {
         }
     }
 
-    private cellKey(cell: Position): string {
-        return `${cell.x},${cell.y}`;
+    private getValidDirections(): Direction[] {
+        let directions: Direction[] = ["up", "down", "left", "right"];
+
+        for (const direction of directions)
+        {
+            const neighbour = this.getNeighbour(direction);
+            const isBlocked = this.blockedCells.has(makeCellKey(neighbour));
+            if (isBlocked) {
+                directions = directions.filter(candidate => candidate !== direction);
+            }
+        }
+        return directions;
     }
 
+    private getUnExploredCells(directions: Direction[]): Direction[]
+    {
+        return directions.filter(direction => {
+            const neighbour:Position = this.getNeighbour(direction);
+            const hasSeen:boolean =  this.path.some(past => past.x === neighbour.x && past.y === neighbour.y)
+            return !hasSeen;
+        })
+    }
+
+    /**
+     * Returns the position of the cell adjacent to the agent's current
+     * position in the given direction.
+     *
+     * The grid's y axis grows downward, so `up` decrements y and `down`
+     * increments it. No bounds or wall checking happens here — the returned
+     * position may be outside the maze or blocked.
+     *
+     * @param direction - The direction to step in from the current position.
+     * @returns The coordinates of the neighbouring cell.
+     */
     private getNeighbour(direction: Direction): Position {
         const currentPosition: Position = this.position;
         const neighbours: Record<Direction, Position> = {
@@ -79,22 +122,7 @@ class Agent {
         return neighbours[direction];
     }
 
-    private getValidDirections(): Direction[] {
-        let directions: Direction[] = ["up", "down", "left", "right"];
-
-        for (const direction of directions)
-        {
-            const neighbour = this.getNeighbour(direction);
-            const isBlocked = this.blockedCells.has(this.cellKey(neighbour));
-            if (isBlocked) {
-                directions = directions.filter(candidate => candidate !== direction);
-            }
-        }
-
-        return directions;
-    }
-
-    public ActOnAction(action: Action, environment: Environment): void {
+    private performAction(action: Action, environment: Environment): void {
         switch (action.type) {
             case "move":
                 if (action.direction) {
@@ -115,16 +143,26 @@ class Agent {
         }
     }
 
+    public Run(enviroment: Environment): void {
+        while(this.IsRunning)
+        {
+            this.observeCell(enviroment);
+            const action: Action = this.think();
+            this.performAction(action, enviroment);
+        }
+    }
+
     private Move(direction: Direction, environment: Environment): void {
         this.moveHistory.push({ position: this.position, direction: direction });
         const newPosition: Position = environment.changeAgentPosition(direction);
         if(newPosition.x !== -1 && newPosition.y !== -1) {
             console.log(`Moving ${direction} to position (${newPosition.x}, ${newPosition.y})`);
             this.position = newPosition;
+            this.path.push(this.position);
         }
         else {
             console.log("Move blocked or out of bounds.");
-            this.blockedCells.add(this.cellKey(this.getNeighbour(direction)));
+            this.blockedCells.add(makeCellKey(this.getNeighbour(direction)));
         }
     }
 
@@ -152,7 +190,6 @@ class Agent {
             console.log("Agent has exited!");
         }
     }
-
 }
 
 export { Agent };

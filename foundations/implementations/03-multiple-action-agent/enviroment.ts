@@ -20,9 +20,18 @@ class Environment {
         for (const cell of blockedCells) {
             this.maze[cell.y][cell.x] = 1;
         }
+        this.maze[agentPosition.y][agentPosition.x] = 
     }
 
-    changeAgentPosition(direction: direction): Position {
+    public getAgentPostion():Position {
+        return this.agentPosition;
+    }
+
+    public getenviromentState(): number[][] {
+        return this.maze;
+    }
+
+    public changeAgentPosition(direction: direction): Position {
         if (direction === "up" && this.agentPosition.y > 0 && this.maze[this.agentPosition.y - 1][this.agentPosition.x] === 0) {
             this.agentPosition.y--;
         }
@@ -73,9 +82,9 @@ class Environment {
         };
     }
 
-    getAgentPostion():Position {
-        return this.agentPosition;
-    }
+
+
+    
 }
 
 export { Environment };

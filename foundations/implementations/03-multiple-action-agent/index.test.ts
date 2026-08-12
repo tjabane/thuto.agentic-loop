@@ -17,6 +17,42 @@ import type { Direction, Position } from "./types.js";
  * ```
  */
 
+/**
+ * How many times a test samples `think()` before judging which directions the
+ * agent is willing to propose.
+ *
+ * @remarks
+ * `think()` re-rolls its direction on every call, so one sample proves nothing.
+ * An agent that has genuinely ruled a direction out never offers it, however many
+ * times it is asked, so a direction missing from a large sample is a real signal.
+ * One that is still choosing freely offers each direction about a quarter of the
+ * time, and the chance of it dodging one across 100 draws is about 3 in 10^13.
+ */
+const DIRECTION_SAMPLES = 100;
+
+/**
+ * Asks the agent for a move repeatedly and reports every direction it offered.
+ *
+ * @param testAgent - the agent to question, left standing where it is
+ * @returns the distinct directions seen across `DIRECTION_SAMPLES` calls
+ *
+ * @remarks
+ * Only `move` actions contribute. The agent is never told to act, so it stays put
+ * and every sample is drawn from the same position.
+ */
+function offeredDirections(testAgent: Agent): Set<Direction> {
+    const offered = new Set<Direction>();
+
+    for (let sample = 0; sample < DIRECTION_SAMPLES; sample++) {
+        const action = testAgent.think();
+        if (action.type === "move" && action.direction) {
+            offered.add(action.direction);
+        }
+    }
+
+    return offered;
+}
+
 describe("A - moving through the maze", () => {
     /**
      * A1 - the four moves that succeed from the centre of an open 3x3 maze.
@@ -573,42 +609,6 @@ describe("D - acting on a decision", () => {
 
 describe("E - remembering directions that were refused", () => {
     /**
-     * How many times the E tests sample `think()` before judging which directions
-     * the agent is willing to propose.
-     *
-     * @remarks
-     * `think()` re-rolls its direction on every call, so one sample proves nothing.
-     * An agent that has genuinely ruled a direction out never offers it, however many
-     * times it is asked, so a direction missing from a large sample is a real signal.
-     * One that is still choosing freely offers each direction about a quarter of the
-     * time, and the chance of it dodging one across 100 draws is about 3 in 10^13.
-     */
-    const DIRECTION_SAMPLES = 100;
-
-    /**
-     * Asks the agent for a move repeatedly and reports every direction it offered.
-     *
-     * @param testAgent - the agent to question, left standing where it is
-     * @returns the distinct directions seen across `DIRECTION_SAMPLES` calls
-     *
-     * @remarks
-     * Only `move` actions contribute. The agent is never told to act, so it stays put
-     * and every sample is drawn from the same position.
-     */
-    function offeredDirections(testAgent: Agent): Set<Direction> {
-        const offered = new Set<Direction>();
-
-        for (let sample = 0; sample < DIRECTION_SAMPLES; sample++) {
-            const action = testAgent.think();
-            if (action.type === "move" && action.direction) {
-                offered.add(action.direction);
-            }
-        }
-
-        return offered;
-    }
-
-    /**
      * E1 - a direction that turned out to be a wall is not offered again.
      *
      * ```
@@ -748,5 +748,294 @@ describe("E - remembering directions that were refused", () => {
 
         assert.deepEqual(testEnvironment.getAgentPostion(), start);
         assert.deepEqual(offeredDirections(testAgent), new Set(["down"]));
+    });
+});
+
+/**
+ * F covers the preference for unexplored cells, and the places where that
+ * preference has to yield to something else.
+ *
+ * @remarks
+ * These were written against a measured symptom rather than a guess. Driving the
+ * `index.ts` maze the way the visualizer's automatic run does - `InspectCell`,
+ * `think`, `ActOnAction`, capped at 50 actions - over 2000 runs:
+ *
+ * ```
+ * solved within 50 actions   94.0%
+ * hit the cap                6.0%
+ * actions when solved        avg 20.6   min 7   max 50
+ * refused moves              6.93 per run
+ * ```
+ *
+ * A maze whose shortest solution is 7 actions takes 20.6 on average and fails
+ * outright once in every seventeen attempts. F2 and F5 are the two causes; F3 and
+ * F4 hold the line on the parts that already work.
+ */
+describe("F - preferring cells it has not seen", () => {
+    /**
+     * F1 - a choice between the cell it came from and one it has never stood on.
+     *
+     * ```
+     *     0 1 2
+     *   0 K # .    up and down from (1, 1) are walls
+     *   1 . A .    the agent walked in from (0, 1), so only (2, 1) is new
+     *   2 . # E
+     * ```
+     *
+     * @remarks
+     * Passes. `getRandomDirection` asks `getUnExploredCells` first and only falls back
+     * to an even draw over `getValidDirections` when nothing new is on offer.
+     *
+     * The walls do the narrowing so that the interesting comparison is the only one
+     * left. Both surviving directions are walkable and neither is blocked, so `left`
+     * can only be ruled out by the agent noticing it has already been to (0, 1) -
+     * which is the behaviour under test, and is a different memory from the
+     * `blockedCells` memory the E tests cover.
+     *
+     * `InspectCell` is called at both cells, since a record of where the agent has
+     * been is only built there. Note that `observations` cannot serve as that record:
+     * `Environment.viewCell` returns a fresh object on every call, so the `Set` grows
+     * a new entry per visit and never recognises a repeat. `path` is the honest
+     * source, or a set of visited cell keys alongside `blockedCells`.
+     *
+     * Sampled rather than asserted once, because a `left` that is still in the running
+     * would be picked only half the time and a single draw of `right` would prove
+     * nothing. `deepEqual` against a one-element set is deliberate: it fails both on an
+     * agent that still offers `left` and on one that somehow stops offering `right`.
+     */
+    test("agent only offers the unexplored direction when the other leads back to a visited cell", () => {
+        const start = { x: 0, y: 1 };
+        const middle = { x: 1, y: 1 };
+        const walls = [{ x: 1, y: 0 }, { x: 1, y: 2 }];
+        const testEnvironment = new Environment(
+            3,
+            3,
+            walls,
+            { x: 0, y: 0 },
+            { x: 2, y: 2 },
+            start,
+        );
+        const testAgent = new Agent(start);
+
+        testAgent.InspectCell(testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "right" }, testEnvironment);
+        testAgent.InspectCell(testEnvironment);
+
+        assert.deepEqual(testEnvironment.getAgentPostion(), middle);
+
+        testAgent.ActOnAction({ type: "move", direction: "up" }, testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "down" }, testEnvironment);
+
+        assert.deepEqual(testEnvironment.getAgentPostion(), middle);
+        assert.deepEqual(offeredDirections(testAgent), new Set(["right"]));
+    });
+
+    /**
+     * F2 - standing on a cell counts as exploring it, whether or not it was inspected.
+     *
+     * ```
+     *     0 1 2
+     *   0 K # .    up and down from (1, 1) are walls
+     *   1 . A .    the agent has been to (0, 1) without ever inspecting it
+     *   2 . # E
+     * ```
+     *
+     * @remarks
+     * Expected to fail. `path` is only appended to in `InspectCell`, so a cell the
+     * agent physically walked onto and off again leaves no trace if nothing inspected
+     * it. `getUnExploredCells` then reads (0, 1) as new and offers `left` half the
+     * time, sending the agent back over ground it has already covered.
+     *
+     * This is the visualizer discrepancy in miniature. The arrow buttons call
+     * `runAction` without `InspectCell`, so every cell reached by hand is invisible to
+     * the agent's own memory - drive it manually for a while, press "Run agent", and it
+     * explores from a blank slate while the map on screen says otherwise. Nothing in
+     * the automatic run does this, which is why it only shows up when the two are
+     * mixed.
+     *
+     * F1 is the same assertion with the inspections left in, and passes. Keeping both
+     * separates "does the preference work" from "is the record of where it has been
+     * complete", which are different bugs with different fixes. The fix here belongs in
+     * `Move` - the position it commits to is the position it has explored - not in the
+     * caller, since requiring every caller to inspect is the fragility that caused
+     * this.
+     */
+    test("agent treats a cell it walked through without inspecting as already explored", () => {
+        const middle = { x: 1, y: 1 };
+        const walls = [{ x: 1, y: 0 }, { x: 1, y: 2 }];
+        const testEnvironment = new Environment(
+            3,
+            3,
+            walls,
+            { x: 0, y: 0 },
+            { x: 2, y: 2 },
+            middle,
+        );
+        const testAgent = new Agent(middle);
+
+        testAgent.ActOnAction({ type: "move", direction: "up" }, testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "down" }, testEnvironment);
+
+        testAgent.ActOnAction({ type: "move", direction: "left" }, testEnvironment);
+        assert.deepEqual(testEnvironment.getAgentPostion(), { x: 0, y: 1 });
+
+        testAgent.ActOnAction({ type: "move", direction: "right" }, testEnvironment);
+        testAgent.InspectCell(testEnvironment);
+
+        assert.deepEqual(testEnvironment.getAgentPostion(), middle);
+        assert.deepEqual(offeredDirections(testAgent), new Set(["right"]));
+    });
+
+    /**
+     * F3 - a cell that refused the agent is not "unexplored" waiting to be tried again.
+     *
+     * ```
+     *     0 1 2
+     *   0 . # .    right from (0, 0) is a wall, already bumped into once
+     *   1 A . .    down and right from (0, 1) have never been visited
+     *   2 E . K
+     * ```
+     *
+     * @remarks
+     * Passes, and worth keeping precisely because it is one line away from not passing.
+     *
+     * The agent never stands on a blocked cell, so a blocked cell is never in `path`,
+     * so it is unexplored forever by that test alone. The only thing stopping the agent
+     * from preferring the wall it just bounced off is the order in
+     * `getRandomDirection`: `getUnExploredCells` is handed the output of
+     * `getValidDirections`, not all four directions. Widen that input and the agent
+     * spends the run headbutting the same wall - the two memories have to compose in
+     * that order.
+     *
+     * The `up` assertion is doing real work too: it confirms the agent is still willing
+     * to explore normally here, so a green result cannot come from an agent that has
+     * simply stopped offering things.
+     */
+    test("agent does not treat a blocked cell as unexplored and retry it", () => {
+        const start = { x: 0, y: 1 };
+        const testEnvironment = new Environment(
+            3,
+            3,
+            [{ x: 1, y: 1 }],
+            { x: 2, y: 2 },
+            { x: 0, y: 2 },
+            start,
+        );
+        const testAgent = new Agent(start);
+
+        testAgent.InspectCell(testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "right" }, testEnvironment);
+
+        assert.deepEqual(testEnvironment.getAgentPostion(), start);
+
+        const offered = offeredDirections(testAgent);
+        assert.equal(offered.has("right"), false);
+        assert.equal(offered.has("up"), true);
+    });
+
+    /**
+     * F4 - at a dead end, the way back is the only offer left.
+     *
+     * ```
+     *     0 1 2
+     *   0 K E A    a one row maze, so the agent is at the end of a corridor
+     * ```
+     *
+     * @remarks
+     * Passes. This is the fallback branch of `getRandomDirection`, and the property
+     * that keeps the agent alive rather than efficient: when `getUnExploredCells`
+     * returns nothing, an even draw over `getValidDirections` still has to produce a
+     * direction.
+     *
+     * Every neighbour of (2, 0) is either off the maze or already visited, so a
+     * preference for the unexplored that had no fallback would either throw
+     * "No validate direction Available" or return `undefined` and leave `think()`
+     * proposing a move with no direction, which `ActOnAction` silently drops. Both
+     * failure modes look identical in the visualizer - the agent just stops - so this
+     * asserts the direction rather than merely that nothing threw.
+     *
+     * The maze is one row deep so that up and down are boundary refusals rather than
+     * walls, which keeps the three refusals ahead of the assertion honest: they teach
+     * the agent something it could not have known in advance.
+     */
+    test("agent offers the way it came when a dead end leaves nothing new nearby", () => {
+        const start = { x: 0, y: 0 };
+        const testEnvironment = new Environment(1, 3, [], start, { x: 1, y: 0 }, start);
+        const testAgent = new Agent(start);
+
+        testAgent.InspectCell(testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "right" }, testEnvironment);
+        testAgent.InspectCell(testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "right" }, testEnvironment);
+        testAgent.InspectCell(testEnvironment);
+
+        assert.deepEqual(testEnvironment.getAgentPostion(), { x: 2, y: 0 });
+
+        testAgent.ActOnAction({ type: "move", direction: "up" }, testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "down" }, testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "right" }, testEnvironment);
+
+        assert.deepEqual(testEnvironment.getAgentPostion(), { x: 2, y: 0 });
+        assert.deepEqual(offeredDirections(testAgent), new Set(["left"]));
+    });
+
+    /**
+     * F5 - curiosity has to stop once the way out is known and openable.
+     *
+     * ```
+     *     0 1 2 3
+     *   0 K E A .    key taken, exit unlocked, agent one step past it at (2, 0)
+     * ```
+     *
+     * @remarks
+     * Expected to fail, and this is the one that produces the runs that hit the
+     * visualizer's 50 action cap. The agent offers `right` towards (3, 0) because it
+     * has never been there, walking away from an unlocked exit it is standing next to.
+     *
+     * `think()` only recognises the exit from on top of it, so the exit is just another
+     * explored cell as far as direction choice is concerned - and being explored is
+     * exactly what makes the preference avoid it. The further the agent gets, the
+     * longer the way back, and once the maze is fully explored the fallback is an even
+     * random walk with no pull towards the exit at all. That is the shape of the 6% of
+     * runs that never finish: not a wrong decision anywhere, just no decision that ever
+     * aims at the goal.
+     *
+     * The key is collected and the exit genuinely unlocked through the environment
+     * rather than faked through the constructor, and both are asserted, so the test
+     * cannot pass or fail for a reason unrelated to the choice being made. The maze is
+     * four cells wide because three is not enough: at (2, 0) in a three wide maze
+     * `left` would be the only valid direction and the agent would return to the exit
+     * by having no alternative, proving nothing.
+     *
+     * Asserting `left` here is asserting a route to a known goal, which is a larger
+     * change than the one line F2 needs - the fix is a general "head for the nearest
+     * cell I know I want" rather than a special case for adjacency, or this test comes
+     * straight back the moment the exit is two cells away.
+     */
+    test("agent heads back to the unlocked exit instead of exploring further", () => {
+        const start = { x: 0, y: 0 };
+        const exitPosition = { x: 1, y: 0 };
+        const testEnvironment = new Environment(1, 4, [], start, exitPosition, start);
+        const testAgent = new Agent(start);
+
+        testAgent.InspectCell(testEnvironment);
+        testAgent.ActOnAction({ type: "takeKey" }, testEnvironment);
+
+        testAgent.ActOnAction({ type: "move", direction: "right" }, testEnvironment);
+        testAgent.InspectCell(testEnvironment);
+        testAgent.ActOnAction({ type: "unlockExit" }, testEnvironment);
+
+        assert.equal(testEnvironment.agentExisted(exitPosition), true);
+
+        testAgent.ActOnAction({ type: "move", direction: "right" }, testEnvironment);
+        testAgent.InspectCell(testEnvironment);
+
+        assert.deepEqual(testEnvironment.getAgentPostion(), { x: 2, y: 0 });
+
+        testAgent.ActOnAction({ type: "move", direction: "up" }, testEnvironment);
+        testAgent.ActOnAction({ type: "move", direction: "down" }, testEnvironment);
+
+        assert.deepEqual(testEnvironment.getAgentPostion(), { x: 2, y: 0 });
+        assert.deepEqual(offeredDirections(testAgent), new Set(["left"]));
     });
 });

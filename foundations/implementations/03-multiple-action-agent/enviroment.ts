@@ -1,5 +1,5 @@
 
-import { Observation, Position, direction } from "./types.js";
+import { Observation, Position, Direction } from "./types.js";
 
 class Environment {
     private readonly maze: number[][];
@@ -20,7 +20,6 @@ class Environment {
         for (const cell of blockedCells) {
             this.maze[cell.y][cell.x] = 1;
         }
-        this.maze[agentPosition.y][agentPosition.x] = 
     }
 
     public getAgentPostion():Position {

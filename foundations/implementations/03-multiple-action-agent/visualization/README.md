@@ -1,7 +1,7 @@
 # Maze visualization
 
-Open `index.html` in a browser. Its controls call the current TypeScript
-`Agent` and `Environment` instances and then reflect their state in the maze.
+Open `index.html` in a browser. The Run agent control calls `Agent.Run()`,
+captures the resulting environment interactions, and replays them in the maze.
 
 Rebuild the browser controller after changing the TypeScript implementation:
 

@@ -1,18 +1,21 @@
-import { agent, environment } from "../index.js";
-import { Action, Direction, Position } from "../types.js";
+import { Agent } from "../agent.js";
+import { Environment } from "../enviroment.js";
+import type { Direction, Observation, Position } from "../types.js";
 
-type AgentSnapshot = {
-    position: Position;
-    hasKey: boolean;
-    hasUnlockedExit: boolean;
-    IsRunning: boolean;
-};
+type VisualDirection = "north" | "east" | "south" | "west";
+type VisualEvent =
+    | { type: "inspect"; position: Position }
+    | { type: "move"; direction: VisualDirection; succeeded: boolean }
+    | { type: "takeKey"; succeeded: boolean }
+    | { type: "unlockExit"; succeeded: boolean }
+    | { type: "exit"; succeeded: boolean };
 
 type MazeVisualizer = {
-    move(direction: "north" | "east" | "south" | "west"): boolean;
+    move(direction: VisualDirection): boolean;
     takeKey(): boolean;
     unlockExit(): boolean;
-    setState(state: { x: number; y: number; hasKey: boolean; exitUnlocked: boolean }): void;
+    reset(): void;
+    setState(state: { x: number; y: number; hasKey?: boolean; exitUnlocked?: boolean }): void;
     showMessage(message: string): void;
     showBlockedMove(direction: string): void;
 };
@@ -23,129 +26,134 @@ declare global {
     }
 }
 
-const visualDirections: Record<Direction, "north" | "east" | "south" | "west"> = {
+const START: Position = { x: 0, y: 0 };
+const KEY: Position = { x: 2, y: 0 };
+const EXIT: Position = { x: 2, y: 2 };
+const BLOCKED: Position[] = [{ x: 1, y: 1 }];
+const ACTION_LIMIT = 50;
+const visualDirections: Record<Direction, VisualDirection> = {
     up: "north",
     right: "east",
     down: "south",
     left: "west",
 };
 
-function snapshot(): AgentSnapshot {
-    return agent as unknown as AgentSnapshot;
+class TracingEnvironment extends Environment {
+    readonly trace: VisualEvent[] = [];
+    private actions = 0;
+
+    override viewCell(position: Position): Observation {
+        this.trace.push({ type: "inspect", position: { ...position } });
+        return super.viewCell(position);
+    }
+
+    override changeAgentPosition(direction: Direction): Position {
+        this.guardLimit();
+        const result = super.changeAgentPosition(direction);
+        this.trace.push({
+            type: "move",
+            direction: visualDirections[direction],
+            succeeded: result.x !== -1 && result.y !== -1,
+        });
+        return result;
+    }
+
+    override collectKey(position: Position): boolean {
+        this.guardLimit();
+        const succeeded = super.collectKey(position);
+        this.trace.push({ type: "takeKey", succeeded });
+        return succeeded;
+    }
+
+    override unlockExit(position: Position): boolean {
+        this.guardLimit();
+        const succeeded = super.unlockExit(position);
+        this.trace.push({ type: "unlockExit", succeeded });
+        return succeeded;
+    }
+
+    override agentExisted(position: Position): boolean {
+        this.guardLimit();
+        const succeeded = super.agentExisted(position);
+        this.trace.push({ type: "exit", succeeded });
+        return succeeded;
+    }
+
+    private guardLimit(): void {
+        this.actions += 1;
+        if (this.actions > ACTION_LIMIT) throw new Error(`Stopped after ${ACTION_LIMIT} actions`);
+    }
 }
 
-function syncView(): void {
-    const current = snapshot();
-    window.mazeVisualizer.setState({
-        x: current.position.x,
-        y: current.position.y,
-        hasKey: current.hasKey,
-        exitUnlocked: current.hasUnlockedExit,
-    });
+const runButton = document.getElementById("autoButton") as HTMLButtonElement | null;
+const resetButton = document.getElementById("resetButton") as HTMLButtonElement | null;
+let replayTimer: number | undefined;
+
+function describe(event: VisualEvent): string {
+    switch (event.type) {
+        case "inspect": return `Inspecting (${event.position.x}, ${event.position.y})`;
+        case "takeKey": return event.succeeded ? "Key collected" : "No key in this room";
+        case "unlockExit": return event.succeeded ? "Exit unlocked" : "Exit could not be unlocked";
+        case "exit": return event.succeeded ? "Agent escaped the maze" : "No open exit here";
+        case "move": return event.succeeded ? `Moving ${event.direction}` : `Move ${event.direction} blocked`;
+    }
 }
 
-function runAction(action: Action): void {
-    const before = snapshot().position;
-    agent.ActOnAction(action, environment);
-    const after = snapshot().position;
+function applyEvent(event: VisualEvent): void {
+    if (event.type === "move") {
+        if (event.succeeded) window.mazeVisualizer.move(event.direction);
+        else window.mazeVisualizer.showBlockedMove(event.direction);
+    } else if (event.type === "takeKey" && event.succeeded) {
+        window.mazeVisualizer.takeKey();
+    } else if (event.type === "unlockExit" && event.succeeded) {
+        window.mazeVisualizer.unlockExit();
+    } else {
+        window.mazeVisualizer.showMessage(describe(event));
+    }
+}
 
-    if (action.type === "move" && action.direction) {
-        if (before.x === after.x && before.y === after.y) {
-            window.mazeVisualizer.showBlockedMove(visualDirections[action.direction]);
-        } else {
-            window.mazeVisualizer.move(visualDirections[action.direction]);
+function replay(trace: VisualEvent[], finalPosition: Position, error?: string): void {
+    let index = 0;
+    window.mazeVisualizer.reset();
+    const next = (): void => {
+        const event = trace[index];
+        if (event) {
+            applyEvent(event);
+            index += 1;
+            replayTimer = window.setTimeout(next, 450);
+            return;
         }
-    }
-
-    syncView();
+        replayTimer = undefined;
+        window.mazeVisualizer.setState({ x: finalPosition.x, y: finalPosition.y });
+        if (error) window.mazeVisualizer.showMessage(error);
+        if (runButton) {
+            runButton.disabled = false;
+            runButton.textContent = "Run agent";
+        }
+    };
+    next();
 }
 
-function thinkAndAct(): boolean {
-    try {
-        agent.InspectCell(environment);
-        const action = agent.think();
-        window.mazeVisualizer.showMessage(`Agent chose: ${action.type}`);
-        runAction(action);
-        return true;
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        window.mazeVisualizer.showMessage(`Agent error: ${message}`);
-        return false;
+function runAgent(): void {
+    if (replayTimer !== undefined) return;
+    if (runButton) {
+        runButton.disabled = true;
+        runButton.textContent = "Planning…";
     }
+    window.setTimeout(() => {
+        const environment = new TracingEnvironment(3, 3, BLOCKED, KEY, EXIT, START);
+        const agent = new Agent(START);
+        let error: string | undefined;
+        try {
+            agent.Run(environment);
+        } catch (cause) {
+            error = cause instanceof Error ? cause.message : String(cause);
+        }
+        if (runButton) runButton.textContent = "Replaying…";
+        replay(environment.trace, environment.getAgentPostion(), error);
+    }, 0);
 }
 
-document.querySelectorAll<HTMLButtonElement>("[data-direction]").forEach((button) => {
-    button.addEventListener("click", () => {
-        const directions: Record<string, Direction> = {
-            north: "up",
-            east: "right",
-            south: "down",
-            west: "left",
-        };
-        const direction = directions[button.dataset.direction ?? ""];
-        if (direction) runAction({ type: "move", direction });
-    });
-});
-
-document.getElementById("inspectButton")?.addEventListener("click", () => {
-    agent.InspectCell(environment);
-    window.mazeVisualizer.showMessage("Agent inspected the current cell");
-    syncView();
-});
-
-document.getElementById("thinkButton")?.addEventListener("click", () => {
-    thinkAndAct();
-});
-
-const autoButton = document.getElementById("autoButton") as HTMLButtonElement | null;
-let autoTimer: number | undefined;
-let automaticSteps = 0;
-
-function stopAutomaticRun(message?: string): void {
-    if (autoTimer !== undefined) window.clearTimeout(autoTimer);
-    autoTimer = undefined;
-    automaticSteps = 0;
-    if (autoButton) autoButton.textContent = "Run agent";
-    if (message) window.mazeVisualizer.showMessage(message);
-}
-
-function runAutomaticStep(): void {
-    automaticSteps += 1;
-    const succeeded = thinkAndAct();
-    const current = snapshot();
-
-    if (!succeeded || !current.IsRunning || automaticSteps >= 50) {
-        const message = automaticSteps >= 50 ? "Automatic run stopped at 50 actions" : undefined;
-        stopAutomaticRun(message);
-        return;
-    }
-
-    autoTimer = window.setTimeout(runAutomaticStep, 700);
-}
-
-autoButton?.addEventListener("click", () => {
-    if (autoTimer !== undefined) {
-        stopAutomaticRun("Automatic run stopped");
-        return;
-    }
-
-    autoButton.textContent = "Stop agent";
-    window.mazeVisualizer.showMessage("Automatic run started");
-    runAutomaticStep();
-});
-
-document.getElementById("takeButton")?.addEventListener("click", () => {
-    runAction({ type: "takeKey" });
-});
-
-document.getElementById("unlockButton")?.addEventListener("click", () => {
-    runAction({ type: "unlockExit" });
-});
-
-document.getElementById("resetButton")?.addEventListener("click", () => {
-    stopAutomaticRun();
-    window.location.reload();
-});
-
-syncView();
-window.mazeVisualizer.showMessage("Connected to the TypeScript agent and environment");
+runButton?.addEventListener("click", runAgent);
+resetButton?.addEventListener("click", () => window.location.reload());
+window.mazeVisualizer.showMessage("Ready to run the TypeScript agent");

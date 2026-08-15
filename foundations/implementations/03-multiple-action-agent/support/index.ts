@@ -1,5 +1,5 @@
-import { Agent } from "./agent.js";
-import { Environment } from "./enviroment.js";
+import { Agent } from "../agent.js";
+import { Environment } from "../enviroment.js";
 import { Position } from "./types.js";
 
 const startPosition: Position = { x: 0, y: 0 };

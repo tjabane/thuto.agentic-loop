@@ -1,5 +1,5 @@
 
-import { Observation, Position, Direction } from "./types.js";
+import { Observation, Position, Direction } from "./support/types.js";
 
 class Environment {
     private readonly maze: number[][];

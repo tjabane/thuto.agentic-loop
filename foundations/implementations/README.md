@@ -28,7 +28,7 @@ which actions have visible consequences and the policy cannot read hidden
 environment state.
 
 Use the existing
-[multiple-action maze specification](./03-multiple-action-agent/README.md) as
+[multiple-action maze specification](./03-multiple-action-agent/support/README.md) as
 the starting point.
 
 ## Exercise 2: Tool interface and dispatcher

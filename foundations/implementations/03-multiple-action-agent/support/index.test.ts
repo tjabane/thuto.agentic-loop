@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { Agent } from "./agent.js";
-import { Environment } from "./enviroment.js";
+import { Agent } from "../agent.js";
+import { Environment } from "../enviroment.js";
 import type { Direction, Observation, Position } from "./types.js";
 
 type RecordedEvent =
@@ -224,6 +224,125 @@ describe("Agent.Run", () => {
         );
     });
 
+    test("explores an unvisited neighbour instead of returning to the previous cell", () => {
+        const start = { x: 0, y: 0 };
+        const junction = { x: 1, y: 0 };
+        const environment = new Environment(1, 3, [], start, { x: 2, y: 0 }, start);
+        const agent = new Agent(start);
+        const exploration = agent as unknown as {
+            Move(direction: Direction, environment: Environment): void;
+            getUnExploredCells(directions: Direction[]): Direction[];
+        };
+
+        exploration.Move("right", environment);
+
+        assert.deepEqual(environment.getAgentPostion(), junction);
+        assert.deepEqual(exploration.getUnExploredCells(["left", "right"]), ["right"]);
+    });
+
+    test("records successful movement as a bidirectional traversal connection", () => {
+        const start = { x: 0, y: 0 };
+        const destination = { x: 1, y: 0 };
+        const environment = new Environment(1, 2, [], start, destination, start);
+        const agent = new Agent(start);
+        const movement = agent as unknown as {
+            Move(direction: Direction, environment: Environment): void;
+        };
+
+        movement.Move("right", environment);
+
+        const startNode = agent.getTraversalNode(start);
+        const destinationNode = agent.getTraversalNode(destination);
+        assert.deepEqual(startNode?.neighbours.right, destination);
+        assert.equal(startNode?.attemptedDirections.has("right"), true);
+        assert.deepEqual(destinationNode?.neighbours.left, start);
+    });
+
+    test("records a failed movement as an attempted blocked direction", () => {
+        const start = { x: 0, y: 0 };
+        const environment = new Environment(1, 1, [], start, start, start);
+        const agent = new Agent(start);
+        const movement = agent as unknown as {
+            Move(direction: Direction, environment: Environment): void;
+        };
+
+        movement.Move("left", environment);
+
+        const startNode = agent.getTraversalNode(start);
+        assert.equal(startNode?.attemptedDirections.has("left"), true);
+        assert.equal(startNode?.blockedDirections.has("left"), true);
+        assert.equal(startNode?.neighbours.left, undefined);
+    });
+
+    test("remembers an exit found after collecting the key and enters exploit phase", () => {
+        const start = { x: 0, y: 0 };
+        const exit = { x: 1, y: 0 };
+        const environment = new Environment(1, 2, [], start, exit, start);
+        const agent = new Agent(start);
+        const actions = agent as unknown as {
+            TakeKey(environment: Environment): void;
+            Move(direction: Direction, environment: Environment): void;
+            observeCell(environment: Environment): void;
+        };
+
+        actions.TakeKey(environment);
+        assert.equal(agent.getPhase(), "explore");
+
+        actions.Move("right", environment);
+        actions.observeCell(environment);
+
+        assert.deepEqual(agent.getExitLocation(), exit);
+        assert.equal(agent.getTraversalNode(exit)?.isExit, true);
+        assert.equal(agent.getPhase(), "exploit");
+    });
+
+    test("routes through known cells to reach a node with an untried direction", () => {
+        const start = { x: 0, y: 0 };
+        const deadEnd = { x: 1, y: 0 };
+        const objective = { x: 0, y: 1 };
+        const environment = new RecordingEnvironment(
+            2,
+            2,
+            [{ x: 1, y: 1 }],
+            objective,
+            objective,
+            start,
+        );
+        const agent = new Agent(start);
+
+        runWithRandomSequence(agent, environment, [0.99, 0, 0, 0, 0.5]);
+
+        const successfulMoves = environment.events.filter(
+            (event): event is Extract<RecordedEvent, { type: "move" }> =>
+                event.type === "move" && event.result.x !== -1 && event.result.y !== -1,
+        );
+        assert.deepEqual(successfulMoves, [
+            { type: "move", direction: "right", result: deadEnd },
+            { type: "move", direction: "left", result: start },
+            { type: "move", direction: "down", result: objective },
+        ]);
+        assert.equal(agent.getTerminationReason(), "success");
+    });
+
+    test("terminates as unreachable after exhausting every reachable direction", () => {
+        const start = { x: 0, y: 0 };
+        const environment = new RecordingEnvironment(
+            1,
+            1,
+            [],
+            { x: 1, y: 1 },
+            { x: 2, y: 2 },
+            start,
+        );
+        const agent = new Agent(start);
+
+        runWithRandomSequence(agent, environment, [0, 0, 0, 0]);
+
+        assert.equal(environment.actionCount, 4);
+        assert.equal(agent.getPhase(), "finished");
+        assert.equal(agent.getTerminationReason(), "unreachable");
+    });
+
     test("inspects the key room before taking the key", () => {
         const start = { x: 0, y: 0 };
         const exit = { x: 1, y: 0 };
@@ -270,6 +389,13 @@ describe("Agent.Run", () => {
         assert.notEqual(keyTaken, -1);
         assert.ok(firstExitInspection < keyTaken);
         assert.ok(keyTaken < exitUnlocked);
+        assert.deepEqual(
+            environment.events.slice(keyTaken + 1, exitUnlocked).filter(
+                (event): event is Extract<RecordedEvent, { type: "move" }> =>
+                    event.type === "move" && event.result.x !== -1 && event.result.y !== -1,
+            ),
+            [{ type: "move", direction: "up", result: exit }],
+        );
         assert.equal(environment.events.at(-1)?.type, "exit");
     });
 

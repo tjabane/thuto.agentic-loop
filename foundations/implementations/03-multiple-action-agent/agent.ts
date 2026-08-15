@@ -1,13 +1,26 @@
-import { Direction, Observation, Position, Action, MoveHistory } from "./types.js";
+import {
+    Direction,
+    Observation,
+    Position,
+    Action,
+    MoveHistory,
+    AgentPhase,
+    TerminationReason,
+    TraversalNode,
+} from "./support/types.js";
 import { Environment } from "./enviroment.js";
-import { makeCellKey } from "./maze-utils.js";
+import { makeCellKey } from "./support/maze-utils.js";
+import { TraversalRoutePlanner } from "./support/route-planner.js";
 
 class Agent {
+    private static readonly MAX_ACTIONS = 25;
+
     private position: Position;
     private ExistLocation: Position;
     private path: Position[];
     private observations: Set<Observation>;
     private blockedCells: Set<string>;
+    private traversalMap: Map<string, TraversalNode>;
     private moveHistory: MoveHistory[];
     private hasKey: boolean;
     private cellHasKey: boolean;
@@ -16,14 +29,25 @@ class Agent {
     private hasExited: boolean;
     private hasUnlockedExit: boolean;
     private IsRunning: boolean;
+    private phase: AgentPhase;
+    private plannedRoute: Direction[];
+    private actionCount: number;
+    private terminationReason: TerminationReason | undefined;
+    private readonly routePlanner: TraversalRoutePlanner;
 
-    constructor(position: Position, hasKey: boolean = false) {
+    constructor(
+        position: Position,
+        hasKey: boolean = false,
+        routePlanner: TraversalRoutePlanner = new TraversalRoutePlanner(),
+    ) {
         this.position = position;
         this.ExistLocation = {x: -1, y: -1};
-        this.path = [];
+        this.path = [position];
         this.moveHistory = [];
         this.observations = new Set<Observation>;
         this.blockedCells = new Set<string>();
+        this.traversalMap = new Map<string, TraversalNode>();
+        this.traversalMap.set(makeCellKey(position), this.createTraversalNode(position));
         this.hasKey = hasKey;
         this.cellHasKey = false;
         this.cellIsLocked = false;
@@ -31,6 +55,42 @@ class Agent {
         this.hasExited = false;
         this.hasUnlockedExit = false;
         this.IsRunning = true;
+        this.phase = "explore";
+        this.plannedRoute = [];
+        this.actionCount = 0;
+        this.terminationReason = undefined;
+        this.routePlanner = routePlanner;
+    }
+
+    private createTraversalNode(position: Position): TraversalNode {
+        return {
+            position: { ...position },
+            neighbours: {},
+            attemptedDirections: new Set<Direction>(),
+            blockedDirections: new Set<Direction>(),
+            isExit: false,
+        };
+    }
+
+    private getOrCreateTraversalNode(position: Position): TraversalNode {
+        const key = makeCellKey(position);
+        const existingNode = this.traversalMap.get(key);
+        if (existingNode) {
+            return existingNode;
+        }
+
+        const node = this.createTraversalNode(position);
+        this.traversalMap.set(key, node);
+        return node;
+    }
+
+    private updatePhase(): void {
+        if (this.hasKey && this.ExistLocation.x !== -1 && this.ExistLocation.y !== -1) {
+            if (this.phase !== "exploit") {
+                this.phase = "exploit";
+                this.plannedRoute = [];
+            }
+        }
     }
 
     private observeCell(environment: Environment): void {
@@ -40,14 +100,17 @@ class Agent {
         this.isAtExist = currentCell.isExit;
         
         this.observations.add(currentCell);
-        if(currentCell.isExit && !this.hasKey)
+        const currentNode = this.getOrCreateTraversalNode(currentCell.position);
+        currentNode.isExit = currentCell.isExit;
+        if(currentCell.isExit)
         {
-            this.ExistLocation = currentCell.position
+            this.ExistLocation = { ...currentCell.position };
+            this.updatePhase();
         }
         
     }
 
-    private think(): Action {
+    private think(): Action | undefined {
         if (this.hasKey && this.cellIsLocked && this.isAtExist) {
             return { type: "unlockExit" };
         }
@@ -57,46 +120,35 @@ class Agent {
         if (!this.hasKey && this.cellHasKey) {
             return { type: "takeKey" };
         }
-        return { type: "move", direction: this.getRandomDirection() };
+        const direction = this.getDirection();
+        return direction ? { type: "move", direction } : undefined;
     }
 
-    private getRandomDirection(): Direction {
-        let directions: Direction[] = this.getValidDirections();
-        let newPaths = this.getUnExploredCells(directions);
-        if(newPaths.length > 0)
-        {
-            return newPaths[Math.floor(Math.random() * newPaths.length)];
+    private getDirection(): Direction | undefined {
+        if (this.plannedRoute.length > 0) {
+            return this.plannedRoute.shift();
         }
-        if(directions.length === 0)
-        {
-            throw Error("No validate direction Available");
-        }
-        else {
-            return directions[Math.floor(Math.random() * directions.length)];
-        }
-    }
 
-    private getValidDirections(): Direction[] {
-        let directions: Direction[] = ["up", "down", "left", "right"];
-
-        for (const direction of directions)
-        {
-            const neighbour = this.getNeighbour(direction);
-            const isBlocked = this.blockedCells.has(makeCellKey(neighbour));
-            if (isBlocked) {
-                directions = directions.filter(candidate => candidate !== direction);
-            }
+        if (this.phase === "exploit") {
+            this.plannedRoute = this.routePlanner.findRouteToPosition(
+                this.traversalMap,
+                this.position,
+                this.ExistLocation,
+            ) ?? [];
+            return this.plannedRoute.shift();
         }
-        return directions;
-    }
 
-    private getUnExploredCells(directions: Direction[]): Direction[]
-    {
-        return directions.filter(direction => {
-            const neighbour:Position = this.getNeighbour(direction);
-            const hasSeen:boolean =  this.path.some(past => past.x === neighbour.x && past.y === neighbour.y)
-            return !hasSeen;
-        })
+        const currentNode = this.getOrCreateTraversalNode(this.position);
+        const untriedDirections = this.routePlanner.getUntriedDirections(currentNode);
+        if (untriedDirections.length > 0) {
+            return untriedDirections[Math.floor(Math.random() * untriedDirections.length)];
+        }
+
+        this.plannedRoute = this.routePlanner.findRouteToNearestExplorableNode(
+            this.traversalMap,
+            this.position,
+        ) ?? [];
+        return this.plannedRoute.shift();
     }
 
     /**
@@ -147,29 +199,66 @@ class Agent {
         while(this.IsRunning)
         {
             this.observeCell(enviroment);
-            const action: Action = this.think();
+            if (this.actionCount >= Agent.MAX_ACTIONS) {
+                this.finish("safety_limit");
+                break;
+            }
+            const action = this.think();
+            if (!action) {
+                this.finish("unreachable");
+                break;
+            }
             this.performAction(action, enviroment);
+            this.actionCount++;
         }
     }
 
+    private finish(reason: TerminationReason): void {
+        this.IsRunning = false;
+        this.phase = "finished";
+        this.terminationReason = reason;
+        this.plannedRoute = [];
+    }
+
     private Move(direction: Direction, environment: Environment): void {
+        const previousPosition = this.position;
+        const previousNode = this.getOrCreateTraversalNode(previousPosition);
+        previousNode.attemptedDirections.add(direction);
         this.moveHistory.push({ position: this.position, direction: direction });
         const newPosition: Position = environment.changeAgentPosition(direction);
         if(newPosition.x !== -1 && newPosition.y !== -1) {
             console.log(`Moving ${direction} to position (${newPosition.x}, ${newPosition.y})`);
             this.position = newPosition;
             this.path.push(this.position);
+            const newNode = this.getOrCreateTraversalNode(newPosition);
+            previousNode.neighbours[direction] = { ...newPosition };
+            const oppositeDirection = this.getOppositeDirection(direction);
+            newNode.neighbours[oppositeDirection] = { ...previousPosition };
+            newNode.attemptedDirections.add(oppositeDirection);
         }
         else {
             console.log("Move blocked or out of bounds.");
             this.blockedCells.add(makeCellKey(this.getNeighbour(direction)));
+            previousNode.blockedDirections.add(direction);
+            this.plannedRoute = [];
         }
+    }
+
+    private getOppositeDirection(direction: Direction): Direction {
+        const opposites: Record<Direction, Direction> = {
+            up: "down",
+            down: "up",
+            left: "right",
+            right: "left",
+        };
+        return opposites[direction];
     }
 
     private TakeKey(environment: Environment): void {
         const keyCollected = environment.collectKey(this.position);
         if(keyCollected) {
             this.hasKey = true;
+            this.updatePhase();
             console.log("Key collected!");
         }
     }
@@ -186,9 +275,42 @@ class Agent {
         const hasExited = environment.agentExisted(this.position);
         if(hasExited) {
             this.hasExited = true;
-            this.IsRunning = false;
+            this.finish("success");
             console.log("Agent has exited!");
         }
+    }
+
+    public getPhase(): AgentPhase {
+        return this.phase;
+    }
+
+    public getExitLocation(): Position | undefined {
+        if (this.ExistLocation.x === -1 || this.ExistLocation.y === -1) {
+            return undefined;
+        }
+        return { ...this.ExistLocation };
+    }
+
+    public getTraversalNode(position: Position): TraversalNode | undefined {
+        const node = this.traversalMap.get(makeCellKey(position));
+        if (!node) {
+            return undefined;
+        }
+        return {
+            position: { ...node.position },
+            neighbours: { ...node.neighbours },
+            attemptedDirections: new Set(node.attemptedDirections),
+            blockedDirections: new Set(node.blockedDirections),
+            isExit: node.isExit,
+        };
+    }
+
+    public getTerminationReason(): TerminationReason | undefined {
+        return this.terminationReason;
+    }
+
+    public getActionCount(): number {
+        return this.actionCount;
     }
 }
 

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { makeCellKey } from "./maze-utils.js";
-import { TraversalRoutePlanner } from "./route-planner.js";
-import type { Direction, Position, TraversalNode } from "./types.js";
+import { makeCellKey } from "../support/maze-utils.js";
+import { TraversalRoutePlanner } from "../support/route-planner.js";
+import type { Direction, Position, TraversalNode } from "../support/types.js";
 
 const ALL_DIRECTIONS: Direction[] = ["up", "down", "left", "right"];
 

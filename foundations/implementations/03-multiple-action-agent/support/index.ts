@@ -1,6 +1,6 @@
 import { Agent } from "../agent.js";
-import { Environment } from "../enviroment.js";
-import { Position } from "./types.js";
+import { Environment } from "../environment.js";
+import type { Position } from "./types.js";
 
 const startPosition: Position = { x: 0, y: 0 };
 const blockedCells: Position[] = [{ x: 1, y: 1 }];

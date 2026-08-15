@@ -1,6 +1,10 @@
-import { Agent } from "../agent.js";
-import { Environment } from "../enviroment.js";
-import type { Direction, Observation, Position } from "../types.js";
+import { Agent } from "../03-multiple-action-agent/agent.js";
+import { Environment } from "../03-multiple-action-agent/environment.js";
+import type {
+    Direction,
+    Observation,
+    Position,
+} from "../03-multiple-action-agent/support/types.js";
 
 type VisualDirection = "north" | "east" | "south" | "west";
 type VisualEvent =
@@ -30,7 +34,6 @@ const START: Position = { x: 0, y: 0 };
 const KEY: Position = { x: 2, y: 0 };
 const EXIT: Position = { x: 2, y: 2 };
 const BLOCKED: Position[] = [{ x: 1, y: 1 }];
-const ACTION_LIMIT = 50;
 const visualDirections: Record<Direction, VisualDirection> = {
     up: "north",
     right: "east",
@@ -40,15 +43,13 @@ const visualDirections: Record<Direction, VisualDirection> = {
 
 class TracingEnvironment extends Environment {
     readonly trace: VisualEvent[] = [];
-    private actions = 0;
-
-    override viewCell(position: Position): Observation {
+    override viewCurrentCell(): Observation {
+        const position = this.getAgentPosition();
         this.trace.push({ type: "inspect", position: { ...position } });
-        return super.viewCell(position);
+        return super.viewCurrentCell();
     }
 
     override changeAgentPosition(direction: Direction): Position {
-        this.guardLimit();
         const result = super.changeAgentPosition(direction);
         this.trace.push({
             type: "move",
@@ -58,30 +59,22 @@ class TracingEnvironment extends Environment {
         return result;
     }
 
-    override collectKey(position: Position): boolean {
-        this.guardLimit();
-        const succeeded = super.collectKey(position);
+    override collectKey(): boolean {
+        const succeeded = super.collectKey();
         this.trace.push({ type: "takeKey", succeeded });
         return succeeded;
     }
 
-    override unlockExit(position: Position): boolean {
-        this.guardLimit();
-        const succeeded = super.unlockExit(position);
+    override unlockExit(): boolean {
+        const succeeded = super.unlockExit();
         this.trace.push({ type: "unlockExit", succeeded });
         return succeeded;
     }
 
-    override agentExisted(position: Position): boolean {
-        this.guardLimit();
-        const succeeded = super.agentExisted(position);
+    override agentExited(): boolean {
+        const succeeded = super.agentExited();
         this.trace.push({ type: "exit", succeeded });
         return succeeded;
-    }
-
-    private guardLimit(): void {
-        this.actions += 1;
-        if (this.actions > ACTION_LIMIT) throw new Error(`Stopped after ${ACTION_LIMIT} actions`);
     }
 }
 
@@ -150,7 +143,7 @@ function runAgent(): void {
             error = cause instanceof Error ? cause.message : String(cause);
         }
         if (runButton) runButton.textContent = "Replaying…";
-        replay(environment.trace, environment.getAgentPostion(), error);
+        replay(environment.trace, environment.getAgentPosition(), error);
     }, 0);
 }
 

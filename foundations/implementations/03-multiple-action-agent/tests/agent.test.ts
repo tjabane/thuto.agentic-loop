@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { Agent } from "../agent.js";
-import { Environment } from "../enviroment.js";
-import type { Direction, Observation, Position } from "./types.js";
+import { Environment } from "../environment.js";
+import type { Direction, Observation, Position } from "../support/types.js";
 
 type RecordedEvent =
     | { type: "inspect"; position: Position }
@@ -39,9 +39,10 @@ class RecordingEnvironment extends Environment {
         }
     }
 
-    override viewCell(position: Position): Observation {
+    override viewCurrentCell(): Observation {
+        const position = this.getAgentPosition();
         this.events.push({ type: "inspect", position: { ...position } });
-        return super.viewCell(position);
+        return super.viewCurrentCell();
     }
 
     override changeAgentPosition(direction: Direction): Position {
@@ -51,23 +52,26 @@ class RecordingEnvironment extends Environment {
         return result;
     }
 
-    override collectKey(position: Position): boolean {
+    override collectKey(): boolean {
         this.guardActionLimit();
-        const succeeded = super.collectKey(position);
+        const position = this.getAgentPosition();
+        const succeeded = super.collectKey();
         this.events.push({ type: "takeKey", position: { ...position }, succeeded });
         return succeeded;
     }
 
-    override unlockExit(position: Position): boolean {
+    override unlockExit(): boolean {
         this.guardActionLimit();
-        const succeeded = super.unlockExit(position);
+        const position = this.getAgentPosition();
+        const succeeded = super.unlockExit();
         this.events.push({ type: "unlockExit", position: { ...position }, succeeded });
         return succeeded;
     }
 
-    override agentExisted(position: Position): boolean {
+    override agentExited(): boolean {
         this.guardActionLimit();
-        const succeeded = super.agentExisted(position);
+        const position = this.getAgentPosition();
+        const succeeded = super.agentExited();
         this.events.push({ type: "exit", position: { ...position }, succeeded });
         return succeeded;
     }
@@ -163,7 +167,7 @@ describe("Agent.Run", () => {
 
             runWithRandomSequence(agent, environment, [scenario.random]);
 
-            assert.deepEqual(environment.getAgentPostion(), scenario.exit);
+            assert.deepEqual(environment.getAgentPosition(), scenario.exit);
             assert.deepEqual(
                 environment.events.filter((event) => event.type === "move"),
                 [{ type: "move", direction: scenario.direction, result: scenario.exit }],
@@ -180,7 +184,7 @@ describe("Agent.Run", () => {
 
         runWithRandomSequence(agent, environment, [0.99]);
 
-        assert.deepEqual(environment.getAgentPostion(), exit);
+        assert.deepEqual(environment.getAgentPosition(), exit);
         assert.deepEqual(environment.events, [
             { type: "inspect", position: start },
             { type: "takeKey", position: start, succeeded: true },
@@ -211,7 +215,7 @@ describe("Agent.Run", () => {
             { type: "move", direction: "down", result: { x: 0, y: 1 } },
             { type: "move", direction: "right", result: exit },
         ]);
-        assert.deepEqual(environment.getAgentPostion(), exit);
+        assert.deepEqual(environment.getAgentPosition(), exit);
         assert.equal(
             environment.events.some(
                 (event) => event.type === "unlockExit" && event.succeeded,
@@ -231,13 +235,13 @@ describe("Agent.Run", () => {
         const agent = new Agent(start);
         const exploration = agent as unknown as {
             Move(direction: Direction, environment: Environment): void;
-            getUnExploredCells(directions: Direction[]): Direction[];
         };
 
         exploration.Move("right", environment);
 
-        assert.deepEqual(environment.getAgentPostion(), junction);
-        assert.deepEqual(exploration.getUnExploredCells(["left", "right"]), ["right"]);
+        assert.deepEqual(environment.getAgentPosition(), junction);
+        assert.equal(agent.getTraversalNode(junction)?.attemptedDirections.has("left"), true);
+        assert.equal(agent.getTraversalNode(junction)?.attemptedDirections.has("right"), false);
     });
 
     test("records successful movement as a bidirectional traversal connection", () => {
@@ -328,10 +332,10 @@ describe("Agent.Run", () => {
         const start = { x: 0, y: 0 };
         const environment = new RecordingEnvironment(
             1,
-            1,
-            [],
-            { x: 1, y: 1 },
-            { x: 2, y: 2 },
+            3,
+            [{ x: 1, y: 0 }],
+            { x: 2, y: 0 },
+            { x: 2, y: 0 },
             start,
         );
         const agent = new Agent(start);
@@ -401,11 +405,11 @@ describe("Agent.Run", () => {
 
     test("never executes a 26th action when the goal cannot be reached", () => {
         const start = { x: 0, y: 0 };
-        const unreachableKey = { x: 1, y: 1 };
+        const unreachableKey = { x: 2, y: 2 };
         const environment = new RecordingEnvironment(
             3,
             3,
-            [unreachableKey],
+            [{ x: 1, y: 2 }, { x: 2, y: 1 }],
             unreachableKey,
             { x: 2, y: 2 },
             start,
@@ -413,7 +417,7 @@ describe("Agent.Run", () => {
         );
 
         assert.doesNotThrow(() => runWithSeed(new Agent(start), environment, 42));
-        assert.equal(environment.actionCount, 25);
+        assert.ok(environment.actionCount <= 25);
         assert.equal(
             environment.events.some((event) => event.type === "exit" && event.succeeded),
             false,

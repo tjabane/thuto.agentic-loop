@@ -1,91 +1,198 @@
 "use strict";
 (() => {
-  // foundations/implementations/03-multiple-action-agent/maze-utils.ts
+  // foundations/implementations/03-multiple-action-agent/support/maze-utils.ts
   function makeCellKey(cell) {
     return `${cell.x},${cell.y}`;
   }
 
+  // foundations/implementations/03-multiple-action-agent/support/route-planner.ts
+  var DIRECTIONS = ["up", "down", "left", "right"];
+  var TraversalRoutePlanner = class {
+    getUntriedDirections(node) {
+      return DIRECTIONS.filter((direction) => !node.attemptedDirections.has(direction));
+    }
+    findRouteToNearestExplorableNode(traversalMap, start) {
+      return this.findShortestRoute(
+        traversalMap,
+        start,
+        (node) => this.getUntriedDirections(node).length > 0
+      );
+    }
+    findRouteToPosition(traversalMap, start, destination) {
+      const destinationKey = makeCellKey(destination);
+      if (makeCellKey(start) === destinationKey) {
+        return [];
+      }
+      return this.findShortestRoute(
+        traversalMap,
+        start,
+        (node) => makeCellKey(node.position) === destinationKey
+      );
+    }
+    findShortestRoute(traversalMap, start, isGoal) {
+      const startKey = makeCellKey(start);
+      const queue = [{ ...start }];
+      const visited = /* @__PURE__ */ new Set([startKey]);
+      const previous = /* @__PURE__ */ new Map();
+      while (queue.length > 0) {
+        const current = queue.shift();
+        if (!current) {
+          break;
+        }
+        const currentKey = makeCellKey(current);
+        const currentNode = traversalMap.get(currentKey);
+        if (!currentNode) {
+          continue;
+        }
+        if (currentKey !== startKey && isGoal(currentNode)) {
+          return this.reconstructRoute(startKey, currentKey, previous);
+        }
+        for (const direction of DIRECTIONS) {
+          const neighbour = currentNode.neighbours[direction];
+          if (!neighbour) {
+            continue;
+          }
+          const neighbourKey = makeCellKey(neighbour);
+          if (visited.has(neighbourKey)) {
+            continue;
+          }
+          visited.add(neighbourKey);
+          previous.set(neighbourKey, { position: current, direction });
+          queue.push(neighbour);
+        }
+      }
+      return void 0;
+    }
+    reconstructRoute(startKey, goalKey, previous) {
+      const route = [];
+      let currentKey = goalKey;
+      while (currentKey !== startKey) {
+        const step = previous.get(currentKey);
+        if (!step) {
+          return [];
+        }
+        route.unshift(step.direction);
+        currentKey = makeCellKey(step.position);
+      }
+      return route;
+    }
+  };
+
   // foundations/implementations/03-multiple-action-agent/agent.ts
-  var Agent = class {
+  var Agent = class _Agent {
+    static MAX_ACTIONS = 25;
     position;
     ExistLocation;
     path;
     observations;
     blockedCells;
+    traversalMap;
     moveHistory;
     hasKey;
     cellHasKey;
-    cellIsLocked;
+    cellIsUnlocked;
     isAtExist;
-    hasExited;
-    hasUnlockedExit;
     IsRunning;
-    constructor(position, hasKey = false) {
+    phase;
+    plannedRoute;
+    actionCount;
+    terminationReason;
+    routePlanner;
+    constructor(position, hasKey = false, routePlanner = new TraversalRoutePlanner()) {
       this.position = position;
       this.ExistLocation = { x: -1, y: -1 };
-      this.path = [];
+      this.path = [position];
       this.moveHistory = [];
       this.observations = /* @__PURE__ */ new Set();
       this.blockedCells = /* @__PURE__ */ new Set();
+      this.traversalMap = /* @__PURE__ */ new Map();
+      this.traversalMap.set(makeCellKey(position), this.createTraversalNode(position));
       this.hasKey = hasKey;
       this.cellHasKey = false;
-      this.cellIsLocked = false;
+      this.cellIsUnlocked = false;
       this.isAtExist = false;
-      this.hasExited = false;
-      this.hasUnlockedExit = false;
       this.IsRunning = true;
+      this.phase = "explore";
+      this.plannedRoute = [];
+      this.actionCount = 0;
+      this.terminationReason = void 0;
+      this.routePlanner = routePlanner;
+    }
+    createTraversalNode(position) {
+      return {
+        position: { ...position },
+        neighbours: {},
+        attemptedDirections: /* @__PURE__ */ new Set(),
+        blockedDirections: /* @__PURE__ */ new Set(),
+        isExit: false
+      };
+    }
+    getOrCreateTraversalNode(position) {
+      const key = makeCellKey(position);
+      const existingNode = this.traversalMap.get(key);
+      if (existingNode) {
+        return existingNode;
+      }
+      const node = this.createTraversalNode(position);
+      this.traversalMap.set(key, node);
+      return node;
+    }
+    updatePhase() {
+      if (this.hasKey && this.ExistLocation.x !== -1 && this.ExistLocation.y !== -1) {
+        if (this.phase !== "exploit") {
+          this.phase = "exploit";
+          this.plannedRoute = [];
+        }
+      }
     }
     observeCell(environment) {
-      let currentCell = environment.viewCell(this.position);
+      const currentCell = environment.viewCurrentCell();
       this.cellHasKey = currentCell.hasKey;
-      this.cellIsLocked = currentCell.isUnlocked;
+      this.cellIsUnlocked = currentCell.isUnlocked;
       this.isAtExist = currentCell.isExit;
       this.observations.add(currentCell);
-      if (currentCell.isExit && !this.hasKey) {
-        this.ExistLocation = currentCell.position;
+      const currentNode = this.getOrCreateTraversalNode(currentCell.position);
+      currentNode.isExit = currentCell.isExit;
+      if (currentCell.isExit) {
+        this.ExistLocation = { ...currentCell.position };
+        this.updatePhase();
       }
     }
     think() {
-      if (this.hasKey && this.cellIsLocked && this.isAtExist) {
+      if (this.hasKey && !this.cellIsUnlocked && this.isAtExist) {
         return { type: "unlockExit" };
       }
-      if (this.hasKey && this.isAtExist && !this.cellIsLocked) {
+      if (this.hasKey && this.isAtExist && this.cellIsUnlocked) {
         return { type: "exit" };
       }
       if (!this.hasKey && this.cellHasKey) {
         return { type: "takeKey" };
       }
-      return { type: "move", direction: this.getRandomDirection() };
+      const direction = this.getDirection();
+      return direction ? { type: "move", direction } : void 0;
     }
-    getRandomDirection() {
-      let directions = this.getValidDirections();
-      let newPaths = this.getUnExploredCells(directions);
-      if (newPaths.length > 0) {
-        return newPaths[Math.floor(Math.random() * newPaths.length)];
+    getDirection() {
+      if (this.plannedRoute.length > 0) {
+        return this.plannedRoute.shift();
       }
-      if (directions.length === 0) {
-        throw Error("No validate direction Available");
-      } else {
-        return directions[Math.floor(Math.random() * directions.length)];
+      if (this.phase === "exploit") {
+        this.plannedRoute = this.routePlanner.findRouteToPosition(
+          this.traversalMap,
+          this.position,
+          this.ExistLocation
+        ) ?? [];
+        return this.plannedRoute.shift();
       }
-    }
-    getValidDirections() {
-      let directions = ["up", "down", "left", "right"];
-      for (const direction of directions) {
-        const neighbour = this.getNeighbour(direction);
-        const isBlocked = this.blockedCells.has(makeCellKey(neighbour));
-        if (isBlocked) {
-          directions = directions.filter((candidate) => candidate !== direction);
-        }
+      const currentNode = this.getOrCreateTraversalNode(this.position);
+      const untriedDirections = this.routePlanner.getUntriedDirections(currentNode);
+      if (untriedDirections.length > 0) {
+        return untriedDirections[Math.floor(Math.random() * untriedDirections.length)];
       }
-      return directions;
-    }
-    getUnExploredCells(directions) {
-      return directions.filter((direction) => {
-        const neighbour = this.getNeighbour(direction);
-        const hasSeen = this.path.some((past) => past.x === neighbour.x && past.y === neighbour.y);
-        return !hasSeen;
-      });
+      this.plannedRoute = this.routePlanner.findRouteToNearestExplorableNode(
+        this.traversalMap,
+        this.position
+      ) ?? [];
+      return this.plannedRoute.shift();
     }
     /**
      * Returns the position of the cell adjacent to the agent's current
@@ -128,124 +235,223 @@
           console.log("Unknown action type");
       }
     }
-    Run(enviroment) {
+    Run(environment) {
       while (this.IsRunning) {
-        this.observeCell(enviroment);
+        this.observeCell(environment);
+        if (this.actionCount >= _Agent.MAX_ACTIONS) {
+          this.finish("safety_limit");
+          break;
+        }
         const action = this.think();
-        this.performAction(action, enviroment);
+        if (!action) {
+          this.finish("unreachable");
+          break;
+        }
+        this.performAction(action, environment);
+        this.actionCount++;
       }
     }
+    finish(reason) {
+      this.IsRunning = false;
+      this.phase = "finished";
+      this.terminationReason = reason;
+      this.plannedRoute = [];
+    }
     Move(direction, environment) {
+      const previousPosition = this.position;
+      const previousNode = this.getOrCreateTraversalNode(previousPosition);
+      previousNode.attemptedDirections.add(direction);
       this.moveHistory.push({ position: this.position, direction });
       const newPosition = environment.changeAgentPosition(direction);
       if (newPosition.x !== -1 && newPosition.y !== -1) {
         console.log(`Moving ${direction} to position (${newPosition.x}, ${newPosition.y})`);
         this.position = newPosition;
         this.path.push(this.position);
+        const newNode = this.getOrCreateTraversalNode(newPosition);
+        previousNode.neighbours[direction] = { ...newPosition };
+        const oppositeDirection = this.getOppositeDirection(direction);
+        newNode.neighbours[oppositeDirection] = { ...previousPosition };
+        newNode.attemptedDirections.add(oppositeDirection);
       } else {
         console.log("Move blocked or out of bounds.");
         this.blockedCells.add(makeCellKey(this.getNeighbour(direction)));
+        previousNode.blockedDirections.add(direction);
+        this.plannedRoute = [];
       }
     }
+    getOppositeDirection(direction) {
+      const opposites = {
+        up: "down",
+        down: "up",
+        left: "right",
+        right: "left"
+      };
+      return opposites[direction];
+    }
     TakeKey(environment) {
-      const keyCollected = environment.collectKey(this.position);
+      const keyCollected = environment.collectKey();
       if (keyCollected) {
         this.hasKey = true;
+        this.updatePhase();
         console.log("Key collected!");
       }
     }
     UnlockExit(environment) {
-      const exitUnlocked = environment.unlockExit(this.position);
+      const exitUnlocked = environment.unlockExit();
       if (exitUnlocked) {
-        this.hasUnlockedExit = true;
         console.log("Exit unlocked!");
       }
     }
     Exit(environment) {
-      const hasExited = environment.agentExisted(this.position);
+      const hasExited = environment.agentExited();
       if (hasExited) {
-        this.hasExited = true;
-        this.IsRunning = false;
+        this.finish("success");
         console.log("Agent has exited!");
       }
     }
+    getPhase() {
+      return this.phase;
+    }
+    getExitLocation() {
+      if (this.ExistLocation.x === -1 || this.ExistLocation.y === -1) {
+        return void 0;
+      }
+      return { ...this.ExistLocation };
+    }
+    getTraversalNode(position) {
+      const node = this.traversalMap.get(makeCellKey(position));
+      if (!node) {
+        return void 0;
+      }
+      return {
+        position: { ...node.position },
+        neighbours: { ...node.neighbours },
+        attemptedDirections: new Set(node.attemptedDirections),
+        blockedDirections: new Set(node.blockedDirections),
+        isExit: node.isExit
+      };
+    }
+    getTerminationReason() {
+      return this.terminationReason;
+    }
+    getActionCount() {
+      return this.actionCount;
+    }
   };
 
-  // foundations/implementations/03-multiple-action-agent/enviroment.ts
+  // foundations/implementations/03-multiple-action-agent/environment.ts
   var Environment = class {
     maze;
     agentPosition;
     keyPosition;
     exitPosition;
-    isKeyCollected;
-    isExitLocked;
+    isKeyCollected = false;
+    isExitLocked = true;
     constructor(numberOfRows, numberOfColumns, blockedCells, keyPosition, exitPosition, agentPosition = { x: 0, y: 0 }) {
-      this.maze = Array(numberOfRows).fill(null).map(() => Array(numberOfColumns).fill(0));
-      this.agentPosition = { ...agentPosition };
-      this.keyPosition = keyPosition;
-      this.exitPosition = exitPosition;
-      this.isKeyCollected = false;
-      this.isExitLocked = true;
-      for (const cell of blockedCells) {
-        this.maze[cell.y][cell.x] = 1;
+      this.validateDimensions(numberOfRows, numberOfColumns);
+      this.validatePosition(agentPosition, numberOfRows, numberOfColumns, "Agent");
+      this.validatePosition(keyPosition, numberOfRows, numberOfColumns, "Key");
+      this.validatePosition(exitPosition, numberOfRows, numberOfColumns, "Exit");
+      for (const blockedCell of blockedCells) {
+        this.validatePosition(blockedCell, numberOfRows, numberOfColumns, "Blocked cell");
       }
+      const blockedKeys = new Set(blockedCells.map((cell) => this.makePositionKey(cell)));
+      this.assertNotBlocked(agentPosition, blockedKeys, "Agent");
+      this.assertNotBlocked(keyPosition, blockedKeys, "Key");
+      this.assertNotBlocked(exitPosition, blockedKeys, "Exit");
+      this.maze = Array.from(
+        { length: numberOfRows },
+        () => Array(numberOfColumns).fill(0)
+      );
+      for (const cell of blockedCells) {
+        const row = this.maze[cell.y];
+        if (row) {
+          row[cell.x] = 1;
+        }
+      }
+      this.agentPosition = { ...agentPosition };
+      this.keyPosition = { ...keyPosition };
+      this.exitPosition = { ...exitPosition };
     }
-    getAgentPostion() {
-      return this.agentPosition;
-    }
-    getenviromentState() {
-      return this.maze;
+    getAgentPosition() {
+      return { ...this.agentPosition };
     }
     changeAgentPosition(direction) {
-      if (direction === "up" && this.agentPosition.y > 0 && this.maze[this.agentPosition.y - 1][this.agentPosition.x] === 0) {
-        this.agentPosition.y--;
-      } else if (direction === "down" && this.agentPosition.y < this.maze.length - 1 && this.maze[this.agentPosition.y + 1][this.agentPosition.x] === 0) {
-        this.agentPosition.y++;
-      } else if (direction === "left" && this.agentPosition.x > 0 && this.maze[this.agentPosition.y][this.agentPosition.x - 1] === 0) {
-        this.agentPosition.x--;
-      } else if (direction === "right" && this.agentPosition.x < this.maze[0].length - 1 && this.maze[this.agentPosition.y][this.agentPosition.x + 1] === 0) {
-        this.agentPosition.x++;
-      } else
+      const candidate = this.getNeighbour(this.agentPosition, direction);
+      if (!this.isTraversable(candidate)) {
         return { x: -1, y: -1 };
-      return { x: this.agentPosition.x, y: this.agentPosition.y };
-    }
-    collectKey(location) {
-      if (this.keyPosition.x === location.x && this.keyPosition.y === location.y) {
-        this.isKeyCollected = true;
-        return true;
       }
-      return false;
+      this.agentPosition = candidate;
+      return { ...this.agentPosition };
     }
-    unlockExit(location) {
-      if (this.exitPosition.x === location.x && this.exitPosition.y === location.y && this.isKeyCollected) {
-        this.isExitLocked = false;
-        return true;
+    collectKey() {
+      if (this.isKeyCollected || !this.positionsMatch(this.agentPosition, this.keyPosition)) {
+        return false;
       }
-      return false;
+      this.isKeyCollected = true;
+      return true;
     }
-    agentExisted(location) {
-      if (this.exitPosition.x === location.x && this.exitPosition.y === location.y && !this.isExitLocked) {
-        return true;
+    unlockExit() {
+      if (!this.isExitLocked || !this.isKeyCollected || !this.positionsMatch(this.agentPosition, this.exitPosition)) {
+        return false;
       }
-      return false;
+      this.isExitLocked = false;
+      return true;
     }
-    viewCell(location) {
+    agentExited() {
+      return this.positionsMatch(this.agentPosition, this.exitPosition) && !this.isExitLocked;
+    }
+    viewCurrentCell() {
       return {
-        position: location,
-        isBlocked: this.maze[location.y][location.x] === 1,
-        hasKey: this.keyPosition.x === location.x && this.keyPosition.y === location.y && !this.isKeyCollected,
-        isExit: this.exitPosition.x === location.x && this.exitPosition.y === location.y,
-        isUnlocked: this.isExitLocked
+        position: { ...this.agentPosition },
+        isBlocked: false,
+        hasKey: this.positionsMatch(this.agentPosition, this.keyPosition) && !this.isKeyCollected,
+        isExit: this.positionsMatch(this.agentPosition, this.exitPosition),
+        isUnlocked: this.positionsMatch(this.agentPosition, this.exitPosition) && !this.isExitLocked
       };
+    }
+    validateDimensions(numberOfRows, numberOfColumns) {
+      if (!Number.isInteger(numberOfRows) || !Number.isInteger(numberOfColumns) || numberOfRows <= 0 || numberOfColumns <= 0) {
+        throw new RangeError("Maze dimensions must be positive integers");
+      }
+    }
+    validatePosition(position, numberOfRows, numberOfColumns, label) {
+      if (!Number.isInteger(position.x) || !Number.isInteger(position.y) || position.x < 0 || position.x >= numberOfColumns || position.y < 0 || position.y >= numberOfRows) {
+        throw new RangeError(`${label} position is outside the maze`);
+      }
+    }
+    assertNotBlocked(position, blockedKeys, label) {
+      if (blockedKeys.has(this.makePositionKey(position))) {
+        throw new Error(`${label} position cannot be blocked`);
+      }
+    }
+    getNeighbour(position, direction) {
+      const offsets = {
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 }
+      };
+      const offset = offsets[direction];
+      return { x: position.x + offset.x, y: position.y + offset.y };
+    }
+    isTraversable(position) {
+      const row = this.maze[position.y];
+      return row !== void 0 && row[position.x] === 0;
+    }
+    positionsMatch(left, right) {
+      return left.x === right.x && left.y === right.y;
+    }
+    makePositionKey(position) {
+      return `${position.x},${position.y}`;
     }
   };
 
-  // foundations/implementations/03-multiple-action-agent/visualization/controller.ts
+  // foundations/implementations/visualization/controller.ts
   var START = { x: 0, y: 0 };
   var KEY = { x: 2, y: 0 };
   var EXIT = { x: 2, y: 2 };
   var BLOCKED = [{ x: 1, y: 1 }];
-  var ACTION_LIMIT = 50;
   var visualDirections = {
     up: "north",
     right: "east",
@@ -254,13 +460,12 @@
   };
   var TracingEnvironment = class extends Environment {
     trace = [];
-    actions = 0;
-    viewCell(position) {
+    viewCurrentCell() {
+      const position = this.getAgentPosition();
       this.trace.push({ type: "inspect", position: { ...position } });
-      return super.viewCell(position);
+      return super.viewCurrentCell();
     }
     changeAgentPosition(direction) {
-      this.guardLimit();
       const result = super.changeAgentPosition(direction);
       this.trace.push({
         type: "move",
@@ -269,27 +474,20 @@
       });
       return result;
     }
-    collectKey(position) {
-      this.guardLimit();
-      const succeeded = super.collectKey(position);
+    collectKey() {
+      const succeeded = super.collectKey();
       this.trace.push({ type: "takeKey", succeeded });
       return succeeded;
     }
-    unlockExit(position) {
-      this.guardLimit();
-      const succeeded = super.unlockExit(position);
+    unlockExit() {
+      const succeeded = super.unlockExit();
       this.trace.push({ type: "unlockExit", succeeded });
       return succeeded;
     }
-    agentExisted(position) {
-      this.guardLimit();
-      const succeeded = super.agentExisted(position);
+    agentExited() {
+      const succeeded = super.agentExited();
       this.trace.push({ type: "exit", succeeded });
       return succeeded;
-    }
-    guardLimit() {
-      this.actions += 1;
-      if (this.actions > ACTION_LIMIT) throw new Error(`Stopped after ${ACTION_LIMIT} actions`);
     }
   };
   var runButton = document.getElementById("autoButton");
@@ -358,7 +556,7 @@
         error = cause instanceof Error ? cause.message : String(cause);
       }
       if (runButton) runButton.textContent = "Replaying\u2026";
-      replay(environment.trace, environment.getAgentPostion(), error);
+      replay(environment.trace, environment.getAgentPosition(), error);
     }, 0);
   }
   runButton?.addEventListener("click", runAgent);

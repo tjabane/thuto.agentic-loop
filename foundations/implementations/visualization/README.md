@@ -6,7 +6,7 @@ captures the resulting environment interactions, and replays them in the maze.
 Rebuild the browser controller after changing the TypeScript implementation:
 
 ```text
-node_modules/.bin/esbuild foundations/implementations/03-multiple-action-agent/visualization/controller.ts --bundle --platform=browser --format=iife --outfile=foundations/implementations/03-multiple-action-agent/visualization/app.js
+node_modules/.bin/esbuild foundations/implementations/visualization/controller.ts --bundle --platform=browser --format=iife --outfile=foundations/implementations/visualization/app.js
 ```
 
 The animation is also available through the global presentation API:

@@ -28,7 +28,7 @@ which actions have visible consequences and the policy cannot read hidden
 environment state.
 
 Use the existing
-[multiple-action maze specification](./03-multiple-action-agent/support/README.md) as
+[maze exploration agent specification](./maze-exploration-agent/README.md) as
 the starting point.
 
 ## Exercise 2: Tool interface and dispatcher
@@ -67,7 +67,7 @@ Compare success rate, action count, invalid calls, latency, and cost.
 The project ends after the LLM and deterministic policies have been compared
 using the same safe, observable harness. Repository inspection and editing are
 part of the separate
-[`basic-coding-agent`](../../basic-coding-agent/README.md) project. Interactive
+`basic-coding-agent` project. Interactive
 mathematics and physics work belongs in `agent.strang`.
 
 The continuing thread is:

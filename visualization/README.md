@@ -8,7 +8,7 @@ key, exit, and blocked-cell positions before running the agent.
 Rebuild the browser controller after changing the TypeScript implementation:
 
 ```text
-node_modules/.bin/esbuild foundations/implementations/visualization/controller.ts --bundle --platform=browser --format=iife --outfile=foundations/implementations/visualization/app.js
+node_modules/.bin/esbuild visualization/controller.ts --bundle --platform=browser --format=iife --outfile=visualization/app.js
 ```
 
 The animation is also available through the global presentation API:

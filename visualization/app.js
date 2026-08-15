@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // foundations/implementations/03-multiple-action-agent/support/maze-utils.ts
+  // maze-exploration-agent/support/maze-utils.ts
   function makeCellKey(cell) {
     return `${cell.x},${cell.y}`;
   }
 
-  // foundations/implementations/03-multiple-action-agent/support/route-planner.ts
+  // maze-exploration-agent/support/route-planner.ts
   var DIRECTIONS = ["up", "down", "left", "right"];
   var TraversalRoutePlanner = class {
     /**
@@ -101,7 +101,7 @@
     }
   };
 
-  // foundations/implementations/03-multiple-action-agent/agent.ts
+  // maze-exploration-agent/agent.ts
   var Agent = class _Agent {
     static MAX_ACTIONS = 25;
     position;
@@ -388,7 +388,7 @@
     }
   };
 
-  // foundations/implementations/03-multiple-action-agent/environment.ts
+  // maze-exploration-agent/environment.ts
   var Environment = class {
     maze;
     agentPosition;
@@ -528,7 +528,7 @@
     }
   };
 
-  // foundations/implementations/visualization/controller.ts
+  // visualization/controller.ts
   var mazeConfiguration = {
     rows: 3,
     columns: 3,

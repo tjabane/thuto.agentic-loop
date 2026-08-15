@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "types": ["node"],
-    "rootDir": "foundations/implementations",
+    "rootDir": ".",
     "outDir": "dist",
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -15,6 +15,10 @@
     "sourceMap": true,
     "declaration": true
   },
-  "include": ["foundations/implementations/**/*.ts"],
+  "include": [
+    "maze-exploration-agent/**/*.ts",
+    "secret-number/**/*.ts",
+    "visualization/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

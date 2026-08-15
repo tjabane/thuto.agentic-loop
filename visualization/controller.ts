@@ -1,10 +1,10 @@
-import { Agent } from "../03-multiple-action-agent/agent.js";
-import { Environment } from "../03-multiple-action-agent/environment.js";
+import { Agent } from "../maze-exploration-agent/agent.js";
+import { Environment } from "../maze-exploration-agent/environment.js";
 import type {
     Direction,
     Observation,
     Position,
-} from "../03-multiple-action-agent/support/types.js";
+} from "../maze-exploration-agent/support/types.js";
 
 type VisualDirection = "north" | "east" | "south" | "west";
 type VisualEvent =

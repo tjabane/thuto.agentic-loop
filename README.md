@@ -5,10 +5,13 @@ exploring a basic coding agent.
 
 ## Projects
 
-- [`foundations/`](./foundations/README.md) develops the agent loop from first
-  principles using deterministic and LLM-driven exercises.
-- [`basic-coding-agent/`](./basic-coding-agent/README.md) is the separate
-  follow-on project for applying the loop to repository work.
+- [`maze-exploration-agent/`](./maze-exploration-agent/README.md) develops
+  an agent loop that explores a maze, finds a key, and unlocks an exit.
+- [`llm-maze-exploration-agent/`](./llm-maze-exploration-agent/README.md)
+  defines the follow-on maze exploration problem using LLM action selection.
+- [`secret-number/`](./secret-number/) contains the earlier loop exercises.
+- [`visualization/`](./visualization/README.md) animates the maze agent.
+- [`ROADMAP.md`](./ROADMAP.md) describes the broader foundation exercises.
 
 Interactive mathematics and physics work belongs in the separate
 `agent.strang` repository.

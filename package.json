@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "tsx --test foundations/implementations/**/*.test.ts",
+    "test": "tsx --test {maze-exploration-agent,secret-number}/**/*.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",

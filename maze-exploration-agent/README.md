@@ -1,4 +1,4 @@
-# Choose between multiple actions
+# Maze exploration agent
 
 ## Objective
 

@@ -8,9 +8,23 @@
   // foundations/implementations/03-multiple-action-agent/support/route-planner.ts
   var DIRECTIONS = ["up", "down", "left", "right"];
   var TraversalRoutePlanner = class {
+    /**
+     * Lists directions that have not yet been attempted from a traversal node.
+     *
+     * @param node - Discovered cell to inspect.
+     * @returns Untried directions in deterministic cardinal-direction order.
+     */
     getUntriedDirections(node) {
       return DIRECTIONS.filter((direction) => !node.attemptedDirections.has(direction));
     }
+    /**
+     * Finds the shortest known route to a cell that still has an untried direction.
+     *
+     * @param traversalMap - Graph of cells discovered by the agent.
+     * @param start - Position from which to begin the search.
+     * @returns Movement directions to the nearest explorable cell, or `undefined`
+     * when none is reachable through the known graph.
+     */
     findRouteToNearestExplorableNode(traversalMap, start) {
       return this.findShortestRoute(
         traversalMap,
@@ -18,6 +32,15 @@
         (node) => this.getUntriedDirections(node).length > 0
       );
     }
+    /**
+     * Finds the shortest known route between two maze positions.
+     *
+     * @param traversalMap - Graph of cells discovered by the agent.
+     * @param start - Position from which to begin the search.
+     * @param destination - Position the route must reach.
+     * @returns Movement directions to the destination, an empty array when already
+     * there, or `undefined` when no known route exists.
+     */
     findRouteToPosition(traversalMap, start, destination) {
       const destinationKey = makeCellKey(destination);
       if (makeCellKey(start) === destinationKey) {
@@ -98,6 +121,13 @@
     actionCount;
     terminationReason;
     routePlanner;
+    /**
+     * Creates an agent at the supplied starting position.
+     *
+     * @param position - Initial maze coordinates.
+     * @param hasKey - Whether the agent starts with the key.
+     * @param routePlanner - Planner used to navigate the discovered traversal graph.
+     */
     constructor(position, hasKey = false, routePlanner = new TraversalRoutePlanner()) {
       this.position = position;
       this.ExistLocation = { x: -1, y: -1 };
@@ -235,6 +265,12 @@
           console.log("Unknown action type");
       }
     }
+    /**
+     * Runs the perceive-think-act loop until the agent exits, cannot find another
+     * action, or reaches its safety limit.
+     *
+     * @param environment - Maze environment to observe and act upon.
+     */
     Run(environment) {
       while (this.IsRunning) {
         this.observeCell(environment);
@@ -309,15 +345,26 @@
         console.log("Agent has exited!");
       }
     }
+    /** @returns The agent's current strategy phase. */
     getPhase() {
       return this.phase;
     }
+    /**
+     * @returns A copy of the discovered exit position, or `undefined` if the exit
+     * has not yet been observed.
+     */
     getExitLocation() {
       if (this.ExistLocation.x === -1 || this.ExistLocation.y === -1) {
         return void 0;
       }
       return { ...this.ExistLocation };
     }
+    /**
+     * Gets a defensive copy of the traversal knowledge for a cell.
+     *
+     * @param position - Coordinates of the node to retrieve.
+     * @returns The copied node, or `undefined` when the cell has not been discovered.
+     */
     getTraversalNode(position) {
       const node = this.traversalMap.get(makeCellKey(position));
       if (!node) {
@@ -331,9 +378,11 @@
         isExit: node.isExit
       };
     }
+    /** @returns Why the run stopped, or `undefined` while it has not terminated. */
     getTerminationReason() {
       return this.terminationReason;
     }
+    /** @returns The number of actions performed during the run. */
     getActionCount() {
       return this.actionCount;
     }
@@ -347,6 +396,18 @@
     exitPosition;
     isKeyCollected = false;
     isExitLocked = true;
+    /**
+     * Creates a rectangular maze environment.
+     *
+     * @param numberOfRows - Positive integer height of the maze.
+     * @param numberOfColumns - Positive integer width of the maze.
+     * @param blockedCells - In-bounds cells through which the agent cannot move.
+     * @param keyPosition - In-bounds, traversable location of the key.
+     * @param exitPosition - In-bounds, traversable location of the exit.
+     * @param agentPosition - Initial in-bounds, traversable agent location.
+     * @throws {@link RangeError} When dimensions or positions are invalid.
+     * @throws {@link Error} When the agent, key, or exit is on a blocked cell.
+     */
     constructor(numberOfRows, numberOfColumns, blockedCells, keyPosition, exitPosition, agentPosition = { x: 0, y: 0 }) {
       this.validateDimensions(numberOfRows, numberOfColumns);
       this.validatePosition(agentPosition, numberOfRows, numberOfColumns, "Agent");
@@ -373,9 +434,17 @@
       this.keyPosition = { ...keyPosition };
       this.exitPosition = { ...exitPosition };
     }
+    /** @returns A copy of the agent's current position. */
     getAgentPosition() {
       return { ...this.agentPosition };
     }
+    /**
+     * Attempts to move the agent one cell in a cardinal direction.
+     *
+     * @param direction - Direction in which to move.
+     * @returns The new position, or the sentinel `{-1, -1}` when movement is blocked
+     * or would leave the maze.
+     */
     changeAgentPosition(direction) {
       const candidate = this.getNeighbour(this.agentPosition, direction);
       if (!this.isTraversable(candidate)) {
@@ -384,6 +453,11 @@
       this.agentPosition = candidate;
       return { ...this.agentPosition };
     }
+    /**
+     * Collects the key when the agent currently occupies its cell.
+     *
+     * @returns `true` only when this call collected the key.
+     */
     collectKey() {
       if (this.isKeyCollected || !this.positionsMatch(this.agentPosition, this.keyPosition)) {
         return false;
@@ -391,6 +465,11 @@
       this.isKeyCollected = true;
       return true;
     }
+    /**
+     * Unlocks the exit when the agent is at the exit and has collected the key.
+     *
+     * @returns `true` only when this call unlocked the exit.
+     */
     unlockExit() {
       if (!this.isExitLocked || !this.isKeyCollected || !this.positionsMatch(this.agentPosition, this.exitPosition)) {
         return false;
@@ -398,9 +477,11 @@
       this.isExitLocked = false;
       return true;
     }
+    /** @returns Whether the agent currently occupies an unlocked exit. */
     agentExited() {
       return this.positionsMatch(this.agentPosition, this.exitPosition) && !this.isExitLocked;
     }
+    /** @returns A snapshot describing the cell currently occupied by the agent. */
     viewCurrentCell() {
       return {
         position: { ...this.agentPosition },
@@ -448,10 +529,14 @@
   };
 
   // foundations/implementations/visualization/controller.ts
-  var START = { x: 0, y: 0 };
-  var KEY = { x: 2, y: 0 };
-  var EXIT = { x: 2, y: 2 };
-  var BLOCKED = [{ x: 1, y: 1 }];
+  var mazeConfiguration = {
+    rows: 3,
+    columns: 3,
+    blockedCells: [{ x: 1, y: 1 }],
+    start: { x: 0, y: 0 },
+    key: { x: 2, y: 0 },
+    exit: { x: 2, y: 2 }
+  };
   var visualDirections = {
     up: "north",
     right: "east",
@@ -491,8 +576,51 @@
     }
   };
   var runButton = document.getElementById("autoButton");
+  var randomButton = document.getElementById("randomButton");
   var resetButton = document.getElementById("resetButton");
   var replayTimer;
+  function makePositionKey(position) {
+    return `${position.x},${position.y}`;
+  }
+  function positionsAreConnected(config) {
+    const blocked = new Set(config.blockedCells.map(makePositionKey));
+    const pending = [config.start];
+    const visited = /* @__PURE__ */ new Set([makePositionKey(config.start)]);
+    const targets = /* @__PURE__ */ new Set([makePositionKey(config.key), makePositionKey(config.exit)]);
+    const offsets = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    while (pending.length > 0) {
+      const current = pending.shift();
+      if (!current) break;
+      targets.delete(makePositionKey(current));
+      for (const [xOffset, yOffset] of offsets) {
+        const neighbour = { x: current.x + xOffset, y: current.y + yOffset };
+        const key = makePositionKey(neighbour);
+        if (neighbour.x >= 0 && neighbour.x < config.columns && neighbour.y >= 0 && neighbour.y < config.rows && !blocked.has(key) && !visited.has(key)) {
+          visited.add(key);
+          pending.push(neighbour);
+        }
+      }
+    }
+    return targets.size === 0;
+  }
+  function generateRandomMaze() {
+    const rows = 3;
+    const columns = 3;
+    const start = { x: 0, y: 0 };
+    const positions = Array.from({ length: rows * columns }, (_, index) => ({
+      x: index % columns,
+      y: Math.floor(index / columns)
+    })).filter((position) => makePositionKey(position) !== makePositionKey(start));
+    while (true) {
+      const shuffled = [...positions].sort(() => Math.random() - 0.5);
+      const key = shuffled[0];
+      const exit = shuffled[1];
+      if (!key || !exit) continue;
+      const blockedCells = shuffled.slice(2, 2 + (Math.random() < 0.5 ? 1 : 2));
+      const candidate = { rows, columns, start, key, exit, blockedCells };
+      if (positionsAreConnected(candidate)) return candidate;
+    }
+  }
   function describe(event) {
     switch (event.type) {
       case "inspect":
@@ -537,6 +665,7 @@
         runButton.disabled = false;
         runButton.textContent = "Run agent";
       }
+      if (randomButton) randomButton.disabled = false;
     };
     next();
   }
@@ -546,9 +675,11 @@
       runButton.disabled = true;
       runButton.textContent = "Planning\u2026";
     }
+    if (randomButton) randomButton.disabled = true;
     window.setTimeout(() => {
-      const environment = new TracingEnvironment(3, 3, BLOCKED, KEY, EXIT, START);
-      const agent = new Agent(START);
+      const { rows, columns, blockedCells, key, exit, start } = mazeConfiguration;
+      const environment = new TracingEnvironment(rows, columns, blockedCells, key, exit, start);
+      const agent = new Agent(start);
       let error;
       try {
         agent.Run(environment);
@@ -560,6 +691,11 @@
     }, 0);
   }
   runButton?.addEventListener("click", runAgent);
+  randomButton?.addEventListener("click", () => {
+    if (replayTimer !== void 0) return;
+    mazeConfiguration = generateRandomMaze();
+    window.mazeVisualizer.configure(mazeConfiguration);
+  });
   resetButton?.addEventListener("click", () => window.location.reload());
   window.mazeVisualizer.showMessage("Ready to run the TypeScript agent");
 })();

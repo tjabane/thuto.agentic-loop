@@ -35,7 +35,7 @@ h2 { margin: 0 0 14px; font-size: .78rem; font-weight: 600; color: var(--muted);
 .status { display: flex; align-items: center; gap: 9px; color: var(--muted); }
 .status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 14px var(--green); }
 .workspace { display: grid; grid-template-columns: minmax(420px, 1.5fr) minmax(280px, .8fr); gap: 24px; }
-.maze-panel, .side-panel > div { background: rgba(17, 28, 45, .86); border: 1px solid rgba(141, 162, 189, .18); border-radius: 18px; }
+.maze-panel, .side-panel > :is(div, section) { background: rgba(17, 28, 45, .86); border: 1px solid rgba(141, 162, 189, .18); border-radius: 18px; }
 .maze-panel { display: grid; place-items: center; min-height: 620px; padding: 54px; position: relative; }
 .compass { position: absolute; top: 20px; right: 24px; color: var(--muted); font-size: .78rem; letter-spacing: .1em; }
 .compass span { color: var(--cyan); font-size: 1.2rem; }
@@ -58,7 +58,7 @@ h2 { margin: 0 0 14px; font-size: .78rem; font-weight: 600; color: var(--muted);
 .agent-eye.left { left: 12px; } .agent-eye.right { right: 12px; }
 .agent.bump { transform: scale(.86); border-color: var(--red); }
 .side-panel { display: flex; flex-direction: column; gap: 16px; }
-.side-panel > div { padding: 20px; }
+.side-panel > :is(div, section) { padding: 20px; }
 .readout { display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; }
 .readout span { color: var(--muted); } .readout strong { font-family: ui-monospace, monospace; font-weight: 600; }
 .direction-pad { display: grid; grid-template-columns: repeat(3, 48px); grid-template-areas: ". n ." "w s e"; gap: 8px; justify-content: center; margin-bottom: 18px; }
@@ -68,7 +68,8 @@ button:hover { border-color: var(--cyan); background: #203750; } button:active {
 .direction-pad button { width: 48px; height: 48px; padding: 0; font-size: 1.25rem; }
 .control-copy { margin: 0 0 18px; color: var(--muted); line-height: 1.55; }
 .action-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-.action-buttons .secondary { margin-left: auto; color: var(--muted); background: transparent; }
+.action-buttons .secondary { color: var(--muted); background: transparent; }
+.action-buttons #randomButton { margin-left: auto; }
 .event-log { min-height: 190px; flex: 1; }
 .event-log ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
 .event-log li { padding-left: 12px; border-left: 2px solid var(--line); color: var(--muted); font-family: ui-monospace, monospace; font-size: .78rem; }

@@ -22,18 +22,7 @@
     <section class="workspace">
       <div class="maze-panel">
         <div class="compass" aria-hidden="true"><span>↑</span> N</div>
-        <div id="maze" class="maze" role="grid" aria-label="Three by three maze">
-          <div class="cell start" role="gridcell" data-x="0" data-y="0"><span class="coordinate">0, 0</span><span class="label">Start</span></div>
-          <div class="cell" role="gridcell" data-x="1" data-y="0"><span class="coordinate">1, 0</span></div>
-          <div class="cell key-room" role="gridcell" data-x="2" data-y="0"><span class="coordinate">2, 0</span><span id="key" class="key" aria-label="Key">◆</span><span class="label">Key</span></div>
-          <div class="cell" role="gridcell" data-x="0" data-y="1"><span class="coordinate">0, 1</span></div>
-          <div class="cell blocked" role="gridcell" data-x="1" data-y="1"><span class="coordinate">1, 1</span><span class="blocked-mark">×</span><span class="label">Blocked</span></div>
-          <div class="cell" role="gridcell" data-x="2" data-y="1"><span class="coordinate">2, 1</span></div>
-          <div class="cell" role="gridcell" data-x="0" data-y="2"><span class="coordinate">0, 2</span></div>
-          <div class="cell" role="gridcell" data-x="1" data-y="2"><span class="coordinate">1, 2</span></div>
-          <div class="cell exit-room" role="gridcell" data-x="2" data-y="2"><span class="coordinate">2, 2</span><span id="exit" class="exit" aria-label="Locked exit">▥</span><span class="label">Exit</span></div>
-          <div id="agent" class="agent" aria-label="Agent at 0, 0"><span class="agent-eye left"></span><span class="agent-eye right"></span></div>
-        </div>
+        <div id="maze" class="maze" role="img" aria-label="Three by three maze"></div>
       </div>
 
       <aside class="side-panel">
@@ -43,14 +32,15 @@
           <span>Exit</span><strong id="exitText">Locked</strong>
         </div>
 
-        <div class="controls" aria-label="Visualization controls">
-          <h2>Current implementation</h2>
+        <section class="controls" aria-labelledby="controlsHeading">
+          <h2 id="controlsHeading">Current implementation</h2>
           <p class="control-copy">Run the complete agent loop, then replay every inspection, move, and action.</p>
           <div class="action-buttons">
             <button id="autoButton" type="button">Run agent</button>
+            <button id="randomButton" type="button" class="secondary">Random maze</button>
             <button id="resetButton" type="button" class="secondary">Reset</button>
           </div>
-        </div>
+        </section>
 
         <div class="event-log">
           <h2>Visualization events</h2>

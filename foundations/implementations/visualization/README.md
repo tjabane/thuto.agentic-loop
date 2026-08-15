@@ -2,6 +2,8 @@
 
 Open `index.html` in a browser. The Run agent control calls `Agent.Run()`,
 captures the resulting environment interactions, and replays them in the maze.
+Use **Random maze** to generate a new solvable 3-by-3 layout with randomized
+key, exit, and blocked-cell positions before running the agent.
 
 Rebuild the browser controller after changing the TypeScript implementation:
 

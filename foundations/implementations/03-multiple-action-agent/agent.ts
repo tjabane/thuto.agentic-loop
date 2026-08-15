@@ -1,4 +1,4 @@
-import {
+import type {
     Direction,
     Observation,
     Position,
@@ -8,10 +8,16 @@ import {
     TerminationReason,
     TraversalNode,
 } from "./support/types.js";
-import { Environment } from "./enviroment.js";
+import type { Environment } from "./environment.js";
 import { makeCellKey } from "./support/maze-utils.js";
 import { TraversalRoutePlanner } from "./support/route-planner.js";
 
+/**
+ * Autonomous maze agent that explores unknown cells, collects a key, and exits.
+ *
+ * The agent builds a traversal graph from successful moves. After both the key and
+ * exit are known, it switches from exploration to shortest-path exploitation.
+ */
 class Agent {
     private static readonly MAX_ACTIONS = 25;
 
@@ -24,10 +30,8 @@ class Agent {
     private moveHistory: MoveHistory[];
     private hasKey: boolean;
     private cellHasKey: boolean;
-    private cellIsLocked: boolean;
+    private cellIsUnlocked: boolean;
     private isAtExist: boolean;
-    private hasExited: boolean;
-    private hasUnlockedExit: boolean;
     private IsRunning: boolean;
     private phase: AgentPhase;
     private plannedRoute: Direction[];
@@ -35,6 +39,13 @@ class Agent {
     private terminationReason: TerminationReason | undefined;
     private readonly routePlanner: TraversalRoutePlanner;
 
+    /**
+     * Creates an agent at the supplied starting position.
+     *
+     * @param position - Initial maze coordinates.
+     * @param hasKey - Whether the agent starts with the key.
+     * @param routePlanner - Planner used to navigate the discovered traversal graph.
+     */
     constructor(
         position: Position,
         hasKey: boolean = false,
@@ -50,10 +61,8 @@ class Agent {
         this.traversalMap.set(makeCellKey(position), this.createTraversalNode(position));
         this.hasKey = hasKey;
         this.cellHasKey = false;
-        this.cellIsLocked = false;
+        this.cellIsUnlocked = false;
         this.isAtExist = false;
-        this.hasExited = false;
-        this.hasUnlockedExit = false;
         this.IsRunning = true;
         this.phase = "explore";
         this.plannedRoute = [];
@@ -94,9 +103,9 @@ class Agent {
     }
 
     private observeCell(environment: Environment): void {
-        let currentCell = environment.viewCell(this.position);
+        const currentCell = environment.viewCurrentCell();
         this.cellHasKey = currentCell.hasKey;
-        this.cellIsLocked = currentCell.isUnlocked;
+        this.cellIsUnlocked = currentCell.isUnlocked;
         this.isAtExist = currentCell.isExit;
         
         this.observations.add(currentCell);
@@ -111,10 +120,10 @@ class Agent {
     }
 
     private think(): Action | undefined {
-        if (this.hasKey && this.cellIsLocked && this.isAtExist) {
+        if (this.hasKey && !this.cellIsUnlocked && this.isAtExist) {
             return { type: "unlockExit" };
         }
-        if (this.hasKey && this.isAtExist && !this.cellIsLocked) {
+        if (this.hasKey && this.isAtExist && this.cellIsUnlocked) {
             return { type: "exit" };
         }
         if (!this.hasKey && this.cellHasKey) {
@@ -195,10 +204,16 @@ class Agent {
         }
     }
 
-    public Run(enviroment: Environment): void {
+    /**
+     * Runs the perceive-think-act loop until the agent exits, cannot find another
+     * action, or reaches its safety limit.
+     *
+     * @param environment - Maze environment to observe and act upon.
+     */
+    public Run(environment: Environment): void {
         while(this.IsRunning)
         {
-            this.observeCell(enviroment);
+            this.observeCell(environment);
             if (this.actionCount >= Agent.MAX_ACTIONS) {
                 this.finish("safety_limit");
                 break;
@@ -208,7 +223,7 @@ class Agent {
                 this.finish("unreachable");
                 break;
             }
-            this.performAction(action, enviroment);
+            this.performAction(action, environment);
             this.actionCount++;
         }
     }
@@ -255,7 +270,7 @@ class Agent {
     }
 
     private TakeKey(environment: Environment): void {
-        const keyCollected = environment.collectKey(this.position);
+        const keyCollected = environment.collectKey();
         if(keyCollected) {
             this.hasKey = true;
             this.updatePhase();
@@ -264,26 +279,29 @@ class Agent {
     }
 
     private UnlockExit(environment: Environment): void {
-        const exitUnlocked = environment.unlockExit(this.position);
+        const exitUnlocked = environment.unlockExit();
         if(exitUnlocked) {
-            this.hasUnlockedExit = true;
             console.log("Exit unlocked!");
         }
     }
 
     private Exit(environment: Environment): void {
-        const hasExited = environment.agentExisted(this.position);
+        const hasExited = environment.agentExited();
         if(hasExited) {
-            this.hasExited = true;
             this.finish("success");
             console.log("Agent has exited!");
         }
     }
 
+    /** @returns The agent's current strategy phase. */
     public getPhase(): AgentPhase {
         return this.phase;
     }
 
+    /**
+     * @returns A copy of the discovered exit position, or `undefined` if the exit
+     * has not yet been observed.
+     */
     public getExitLocation(): Position | undefined {
         if (this.ExistLocation.x === -1 || this.ExistLocation.y === -1) {
             return undefined;
@@ -291,6 +309,12 @@ class Agent {
         return { ...this.ExistLocation };
     }
 
+    /**
+     * Gets a defensive copy of the traversal knowledge for a cell.
+     *
+     * @param position - Coordinates of the node to retrieve.
+     * @returns The copied node, or `undefined` when the cell has not been discovered.
+     */
     public getTraversalNode(position: Position): TraversalNode | undefined {
         const node = this.traversalMap.get(makeCellKey(position));
         if (!node) {
@@ -305,10 +329,12 @@ class Agent {
         };
     }
 
+    /** @returns Why the run stopped, or `undefined` while it has not terminated. */
     public getTerminationReason(): TerminationReason | undefined {
         return this.terminationReason;
     }
 
+    /** @returns The number of actions performed during the run. */
     public getActionCount(): number {
         return this.actionCount;
     }

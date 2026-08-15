@@ -3,11 +3,26 @@ import type { Direction, Position, TraversalNode } from "./types.js";
 
 const DIRECTIONS: readonly Direction[] = ["up", "down", "left", "right"];
 
+/** Plans shortest routes through cells that the agent has already discovered. */
 class TraversalRoutePlanner {
+    /**
+     * Lists directions that have not yet been attempted from a traversal node.
+     *
+     * @param node - Discovered cell to inspect.
+     * @returns Untried directions in deterministic cardinal-direction order.
+     */
     public getUntriedDirections(node: TraversalNode): Direction[] {
         return DIRECTIONS.filter(direction => !node.attemptedDirections.has(direction));
     }
 
+    /**
+     * Finds the shortest known route to a cell that still has an untried direction.
+     *
+     * @param traversalMap - Graph of cells discovered by the agent.
+     * @param start - Position from which to begin the search.
+     * @returns Movement directions to the nearest explorable cell, or `undefined`
+     * when none is reachable through the known graph.
+     */
     public findRouteToNearestExplorableNode(
         traversalMap: ReadonlyMap<string, TraversalNode>,
         start: Position,
@@ -19,6 +34,15 @@ class TraversalRoutePlanner {
         );
     }
 
+    /**
+     * Finds the shortest known route between two maze positions.
+     *
+     * @param traversalMap - Graph of cells discovered by the agent.
+     * @param start - Position from which to begin the search.
+     * @param destination - Position the route must reach.
+     * @returns Movement directions to the destination, an empty array when already
+     * there, or `undefined` when no known route exists.
+     */
     public findRouteToPosition(
         traversalMap: ReadonlyMap<string, TraversalNode>,
         start: Position,

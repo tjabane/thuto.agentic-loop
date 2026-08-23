@@ -90,4 +90,4 @@ button:hover { border-color: var(--cyan); background: #203750; } button:active {
   .cell { padding: 6px; } .coordinate { top: 5px; left: 5px; font-size: .6rem; } .label { font-size: .6rem; }
 }
 
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms; } }

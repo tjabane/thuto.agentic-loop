@@ -6,7 +6,7 @@ import type {
     AgentState,
 } from "./models/agent-utils.js";
 import { parseVertexId, type VertexId, vertexId } from "./models/graph.js";
-import type { Direction } from "./models/position.js";
+import type { Direction, NodeInformation } from "./models/position.js";
 import { Tree } from "./models/tree.js";
 
 /** An agent that incrementally learns and navigates a maze. */
@@ -14,6 +14,7 @@ class Agent {
     pathTree: Tree;
     blockedNodes: Set<VertexId>;
     position: VertexId;
+    currentNode: NodeInformation | undefined;
     existLocation: VertexId | undefined;
     isKeyCollected: boolean;
     isExistUnlocked: boolean;
@@ -28,6 +29,7 @@ class Agent {
         this.pathTree = new Tree();
         this.blockedNodes = new Set<VertexId>();
         this.position = "0,0";
+        this.currentNode = undefined;
         this.existLocation = undefined;
         this.isKeyCollected = false;
         this.isExistUnlocked = false;
@@ -41,6 +43,7 @@ class Agent {
      */
     private observe(enviroment: Enviroment): void {
         const observation = enviroment.inspectCurrentNode();
+        this.currentNode = observation;
         this.position = vertexId(
             observation.position.x,
             observation.position.y,
@@ -57,6 +60,14 @@ class Agent {
     private getStateSnapshot(): AgentState {
         return {
             position: this.position,
+            ...(this.currentNode === undefined
+                ? {}
+                : {
+                      currentNode: {
+                          ...this.currentNode,
+                          position: { ...this.currentNode.position },
+                      },
+                  }),
             pathTree: this.pathTree.clone(),
             blockedNodes: [...this.blockedNodes],
             isKeyCollected: this.isKeyCollected,

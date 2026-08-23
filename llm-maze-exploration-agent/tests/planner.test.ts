@@ -23,6 +23,12 @@ function createState(): AgentState {
 
     return {
         position: "1,0",
+        currentNode: {
+            position: { x: 1, y: 0 },
+            hasKey: false,
+            hasExit: false,
+            isExitLocked: true,
+        },
         pathTree,
         blockedNodes: ["1,1"],
         isKeyCollected: false,
@@ -50,6 +56,7 @@ describe("LlmActionPlanner", () => {
 
         assert.ok(client.prompt);
         assert.match(client.prompt, /"position": "1,0"/);
+        assert.match(client.prompt, /"currentNode": \{/);
         assert.match(client.prompt, /"blockedNodes": \[/);
         assert.match(client.prompt, /"1,1"/);
         assert.match(client.prompt, /"knownExitLocation": "2,0"/);

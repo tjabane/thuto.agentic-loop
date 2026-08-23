@@ -1,5 +1,5 @@
 import type { VertexId } from "./graph.js";
-import type { Direction } from "./position.js";
+import type { Direction, NodeInformation } from "./position.js";
 import type { Tree } from "./tree.js";
 
 /** Supported actions that an agent can perform. */
@@ -15,6 +15,7 @@ type Action =
 
 type AgentState = {
     position: VertexId;
+    currentNode?: NodeInformation;
     pathTree: Tree;
     blockedNodes: VertexId[];
     isKeyCollected: boolean;

@@ -52,6 +52,7 @@ class LlmActionPlanner implements ActionPlanner {
     private getAgentPrompt(state: AgentState, actions: Action[]): string {
         const planningState = {
             position: state.position,
+            currentNode: state.currentNode ?? null,
             knownTree: {
                 vertices: [...state.pathTree.vertices],
                 edges: [...state.pathTree.edges],

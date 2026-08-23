@@ -35,6 +35,12 @@ describe("Agent planning", () => {
 
         assert.deepEqual(planner.state, {
             position: "0,0",
+            currentNode: {
+                position: { x: 0, y: 0 },
+                hasKey: false,
+                hasExit: false,
+                isExitLocked: true,
+            },
             pathTree: planner.state?.pathTree,
             blockedNodes: ["0,1"],
             isKeyCollected: true,

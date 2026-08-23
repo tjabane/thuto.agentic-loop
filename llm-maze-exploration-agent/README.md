@@ -181,3 +181,21 @@ This problem does not require:
 - training or fine-tuning a model;
 - optimizing for a particular model provider; or
 - modifying the existing deterministic maze exploration agent.
+
+## Live LLM scenario tests
+
+The live scenario suite uses the configured OpenAI model and makes billable API
+requests. It is disabled during normal test runs. To enable it in PowerShell:
+
+```powershell
+$env:OPENAI_API_KEY="your-api-key"
+$env:OPENAI_MODEL="gpt-5.6-luna"
+$env:RUN_LIVE_LLM_TESTS="true"
+$env:LLM_E2E_MAX_ACTIONS="25"
+npm run test:llm:live
+```
+
+The suite runs sequentially and covers a shared key/exit starting node, key-first
+and exit-first exploration, an alternate route around a blocked node, and an
+unreachable key or exit. Lower `LLM_E2E_MAX_ACTIONS` to reduce the maximum
+number of API requests per scenario.

@@ -6,6 +6,7 @@
     "scripts": {
         "build": "tsc",
         "llm:run": "tsx llm-maze-exploration-agent/src/run.ts",
+        "test:llm:live": "tsx --test llm-maze-exploration-agent/tests/llm-live.test.ts",
         "test": "tsx --test {maze-exploration-agent,llm-maze-exploration-agent,secret-number}/**/*.test.ts",
         "typecheck": "tsc --noEmit",
         "lint": "biome lint .",

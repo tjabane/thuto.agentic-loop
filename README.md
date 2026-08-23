@@ -101,7 +101,7 @@ scenario. Do not commit API keys to the repository.
 
 ## Maze visualization
 
-[`visualizations/mazre-visualizaton/`](./visualizations/mazre-visualizaton/README.md)
+[`visualizations/maze-visualization/`](./visualizations/maze-visualization/README.md)
 runs solution 04 behind a local HTTP server, keeping the OpenAI API key out of
 browser JavaScript. Configure at least `OPENAI_API_KEY`; `OPENAI_MODEL` is
 optional when the implementation's default is suitable.
@@ -166,7 +166,7 @@ unless explicitly enabled.
 03-maze-determistic/
 04-maze-llm-agent/
 visualizations/
-  mazre-visualizaton/
+  maze-visualization/
   secret-number-visualization.html
 ROADMAP.md
 ```

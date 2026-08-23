@@ -28,7 +28,7 @@ const MAX_ACTIONS = Number(process.env.LLM_E2E_MAX_ACTIONS ?? 25);
 const VISUALIZATION_ROOT = join(
     process.cwd(),
     "visualizations",
-    "mazre-visualizaton",
+    "maze-visualization",
 );
 const visualDirections: Record<Direction, VisualDirection> = {
     up: "north",

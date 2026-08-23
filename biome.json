@@ -6,7 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!!**/dist", "!**/visualizations/mazre-visualizaton/app.js"]
+		"includes": ["**", "!!**/dist", "!**/visualizations/maze-visualization/app.js"]
 	},
 	"formatter": {
 		"enabled": true,

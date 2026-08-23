@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // visualizations/mazre-visualizaton/controller.ts
+  // visualizations/maze-visualization/controller.ts
   var mazeConfiguration = {
     rows: 3,
     columns: 3,

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maze Agent Visualization</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="header">
+      <div>
+        <p class="eyebrow">Maze exploration agent</p>
+        <h1>Maze visualizer</h1>
+      </div>
+      <div class="status" aria-live="polite">
+        <span class="status-dot"></span>
+        <span id="statusText">Ready</span>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <div class="maze-panel">
+        <div class="compass" aria-hidden="true"><span>↑</span> N</div>
+        <div id="maze" class="maze" role="img" aria-label="Three by three maze"></div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="readout">
+          <span>Position</span><strong id="positionText">(0, 0)</strong>
+          <span>Inventory</span><strong id="inventoryText">Empty</strong>
+          <span>Exit</span><strong id="exitText">Locked</strong>
+        </div>
+
+        <section class="controls" aria-labelledby="controlsHeading">
+          <h2 id="controlsHeading">Current implementation</h2>
+          <p class="control-copy">Ask the LLM to solve the maze, then replay every inspection, move, and action.</p>
+          <div class="action-buttons">
+            <button id="autoButton" type="button">Run LLM agent</button>
+            <button id="randomButton" type="button" class="secondary">Random maze</button>
+            <button id="resetButton" type="button" class="secondary">Reset</button>
+          </div>
+        </section>
+
+        <div class="event-log">
+          <h2>Visualization events</h2>
+          <ol id="eventLog" aria-live="polite"></ol>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script src="visualization.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

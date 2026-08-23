@@ -1,22 +1,42 @@
-import { Direction } from "./position.js";
-import { VertexId } from "../models/graph.js"
-import { Tree } from "../models/tree.js"
-import { from } from "node:stream/iter";
+import type { VertexId } from "./graph.js";
+import type { Direction } from "./position.js";
+import type { Tree } from "./tree.js";
 
+/** Supported actions that an agent can perform. */
+const ACTION_TYPES = ["move", "takeKey", "unlockExist", "exit"] as const;
+
+/** The name of a supported agent action. */
+type ActionType = (typeof ACTION_TYPES)[number];
+
+/** A validated action that can be performed by the agent. */
 type Action =
-    | { type: "move"; direction: Direction }
-    | { type: "takeKey" }
-    | { type: "unlockExist" }
-    | { type: "exit" };
+    | { type: (typeof ACTION_TYPES)[0]; direction: Direction }
+    | { type: Exclude<ActionType, (typeof ACTION_TYPES)[0]> };
 
 type AgentState = {
-      position: VertexId;
-      pathTree: Tree;
-      blockedNodes: VertexId[];
-      isKeyCollected: boolean;
-      existLocation?: VertexId;
-      isExistUnlocked: boolean;
-  };
+    position: VertexId;
+    pathTree: Tree;
+    blockedNodes: VertexId[];
+    isKeyCollected: boolean;
+    existLocation?: VertexId;
+    isExistUnlocked: boolean;
+};
 
+/** Reason an agent run stopped. */
+type RunTerminationReason = "success" | "action_limit";
 
-export { Action, AgentState }
+/** Final outcome and verified state of an agent run. */
+type AgentRunResult = {
+    terminationReason: RunTerminationReason;
+    actionCount: number;
+    finalState: AgentState;
+};
+
+export {
+    ACTION_TYPES,
+    type Action,
+    type ActionType,
+    type AgentRunResult,
+    type AgentState,
+    type RunTerminationReason,
+};

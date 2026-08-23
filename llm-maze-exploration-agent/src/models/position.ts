@@ -1,10 +1,13 @@
+/** Supported orthogonal movement directions. */
+const DIRECTIONS = ["up", "down", "left", "right"] as const;
 
-type Direction = "up"| "down"| "left" | "right"
+/** A supported orthogonal movement direction. */
+type Direction = (typeof DIRECTIONS)[number];
 
 type Position = {
-    x: number
-    y: number
-}
+    x: number;
+    y: number;
+};
 
 type State = {
     keyPosition: Position;
@@ -12,7 +15,7 @@ type State = {
     agentPostion: Position;
     isKeyTaken: boolean;
     isExistLocked: boolean;
-}
+};
 
 /** Information observable at the agent's current maze node. */
 type NodeInformation = {
@@ -27,6 +30,12 @@ type NodeInformation = {
 
     /** Whether the maze exit is currently locked. */
     isExitLocked: boolean;
-}
+};
 
-export type {Position, Direction, NodeInformation, State}
+export {
+    DIRECTIONS,
+    type Direction,
+    type NodeInformation,
+    type Position,
+    type State,
+};

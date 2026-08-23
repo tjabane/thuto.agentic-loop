@@ -30,4 +30,21 @@ describe("Tree", () => {
         assert.deepEqual(tree.vertices, ["0,0", "1,0"]);
         assert.deepEqual(tree.edges, [["0,0", "1,0"]]);
     });
+
+    test("creates an independent clone", () => {
+        const tree = new Tree();
+        tree.addTraversal("0,0", "1,0");
+
+        const clone = tree.clone();
+        clone.addTraversal("1,0", "2,0");
+        tree.addVertex("0,1");
+
+        assert.deepEqual(tree.vertices, ["0,0", "1,0", "0,1"]);
+        assert.deepEqual(tree.edges, [["0,0", "1,0"]]);
+        assert.deepEqual(clone.vertices, ["0,0", "1,0", "2,0"]);
+        assert.deepEqual(clone.edges, [
+            ["0,0", "1,0"],
+            ["1,0", "2,0"],
+        ]);
+    });
 });

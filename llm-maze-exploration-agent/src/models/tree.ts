@@ -48,6 +48,28 @@ class Tree {
         this.addVertex(to);
         this.addEdge(from, to);
     }
+
+    /**
+     * Creates an independent copy of this tree.
+     *
+     * Mutating the returned tree does not affect this tree, and mutating this
+     * tree does not affect the returned copy.
+     *
+     * @returns A new tree containing the same vertices and edges.
+     */
+    clone(): Tree {
+        const clone = new Tree();
+
+        for (const vertex of this.vertices) {
+            clone.addVertex(vertex);
+        }
+
+        for (const [from, to] of this.edges) {
+            clone.addEdge(from, to);
+        }
+
+        return clone;
+    }
 }
 
 export { Tree };

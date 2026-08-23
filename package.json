@@ -1,20 +1,24 @@
 {
-  "name": "thuto-agentic-loop",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "tsc",
-    "test": "tsx --test {maze-exploration-agent,llm-maze-exploration-agent,secret-number}/**/*.test.ts",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome lint .",
-    "lint:fix": "biome lint --write .",
-    "format": "biome format --write ."
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.5.8",
-    "@types/node": "latest",
-    "tsx": "latest",
-    "typescript": "latest"
-  }
+    "name": "thuto-agentic-loop",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "llm:run": "tsx llm-maze-exploration-agent/src/run.ts",
+        "test": "tsx --test {maze-exploration-agent,llm-maze-exploration-agent,secret-number}/**/*.test.ts",
+        "typecheck": "tsc --noEmit",
+        "lint": "biome lint .",
+        "lint:fix": "biome lint --write .",
+        "format": "biome format --write ."
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.5.8",
+        "@types/node": "latest",
+        "tsx": "latest",
+        "typescript": "latest"
+    },
+    "dependencies": {
+        "openai": "^7.5.0"
+    }
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import {describe, test} from "node:test"
 
-import {Enviroment} from "../src/enviroment.js"
+import {Enviroment} from "../../src/enviroment.js"
 
 describe("Enviroment", () => {
     test("starts at the origin with the key uncollected and the exit locked", () => {

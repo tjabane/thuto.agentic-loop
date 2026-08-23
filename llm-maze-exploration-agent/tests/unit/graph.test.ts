@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { isVertexId, parseVertexId, vertexId } from "../src/models/graph.js";
+import { isVertexId, parseVertexId, vertexId } from "../../src/models/graph.js";
 
 describe("graph", () => {
     describe("vertexId", () => {

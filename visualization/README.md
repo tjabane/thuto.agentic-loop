@@ -1,14 +1,19 @@
 # Maze visualization
 
-Open `index.html` in a browser. The Run agent control calls `Agent.Run()`,
-captures the resulting environment interactions, and replays them in the maze.
-Use **Random maze** to generate a new solvable 3-by-3 layout with randomized
-key, exit, and blocked-cell positions before running the agent.
+The visualization runs the LLM agent on a local server so the OpenAI API key is
+never exposed to browser JavaScript. Start it from the repository root:
+
+```text
+npm run visualization:start
+```
+
+Then open `http://localhost:3000`. Use **Random maze** to generate a new solvable
+3-by-3 layout before asking the LLM agent to solve and replay it.
 
 Rebuild the browser controller after changing the TypeScript implementation:
 
 ```text
-node_modules/.bin/esbuild visualization/controller.ts --bundle --platform=browser --format=iife --outfile=visualization/app.js
+npm run visualization:build
 ```
 
 The animation is also available through the global presentation API:

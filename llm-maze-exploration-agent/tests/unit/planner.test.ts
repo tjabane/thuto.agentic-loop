@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import type { ILLMClient } from "../src/llm/client.js";
-import { LlmActionPlanner } from "../src/llm/planner.js";
-import type { Action, AgentState } from "../src/models/agent-utils.js";
-import { Tree } from "../src/models/tree.js";
+import type { ILLMClient } from "../../src/llm/client.js";
+import { LlmActionPlanner } from "../../src/llm/planner.js";
+import type { Action, AgentState } from "../../src/models/agent-utils.js";
+import { Tree } from "../../src/models/tree.js";
 
 class FakeClient implements ILLMClient {
     prompt: string | undefined;

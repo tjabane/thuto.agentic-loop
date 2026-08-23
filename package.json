@@ -5,10 +5,11 @@
     "type": "module",
     "scripts": {
         "build": "tsc",
-        "llm:run": "tsx llm-maze-exploration-agent/src/run.ts",
-        "test:llm:live": "tsx --test llm-maze-exploration-agent/tests/llm-live.test.ts",
+        "test:llm:live": "tsx --test llm-maze-exploration-agent/tests/integration/llm-live.test.ts",
         "test": "tsx --test {maze-exploration-agent,llm-maze-exploration-agent,secret-number}/**/*.test.ts",
         "typecheck": "tsc --noEmit",
+        "visualization:build": "esbuild visualization/controller.ts --bundle --platform=browser --format=iife --outfile=visualization/app.js",
+        "visualization:start": "npm run visualization:build && tsx visualization/server.ts",
         "lint": "biome lint .",
         "lint:fix": "biome lint --write .",
         "format": "biome format --write ."

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { Agent } from "../src/agent.js";
-import { Enviroment } from "../src/enviroment.js";
-import type { ActionPlanner } from "../src/llm/planner.js";
-import type { Action, AgentState } from "../src/models/agent-utils.js";
+import { Agent } from "../../src/agent.js";
+import { Enviroment } from "../../src/enviroment.js";
+import type { ActionPlanner } from "../../src/llm/planner.js";
+import type { Action, AgentState } from "../../src/models/agent-utils.js";
 
 class FakePlanner implements ActionPlanner {
     state: AgentState | undefined;

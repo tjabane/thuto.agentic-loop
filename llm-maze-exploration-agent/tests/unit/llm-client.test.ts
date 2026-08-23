@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import type OpenAI from "openai";
 
-import { LLMClient } from "../src/llm/client.js";
+import { LLMClient } from "../../src/llm/client.js";
 
 function fakeOpenAI(outputText: string): Pick<OpenAI, "responses"> {
     return {

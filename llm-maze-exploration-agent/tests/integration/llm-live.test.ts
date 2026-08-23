@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { Agent } from "../src/agent.js";
-import { Enviroment } from "../src/enviroment.js";
-import { LLMClient } from "../src/llm/client.js";
-import { LlmActionPlanner } from "../src/llm/planner.js";
-import { vertexId } from "../src/models/graph.js";
-import type { Position } from "../src/models/position.js";
+import { Agent } from "../../src/agent.js";
+import { Enviroment } from "../../src/enviroment.js";
+import { LLMClient } from "../../src/llm/client.js";
+import { LlmActionPlanner } from "../../src/llm/planner.js";
+import { vertexId } from "../../src/models/graph.js";
+import type { Position } from "../../src/models/position.js";
 
 const LIVE_TESTS_ENABLED = process.env.RUN_LIVE_LLM_TESTS === "true";
 const MODEL = process.env.OPENAI_MODEL ?? "gpt-5.6-luna";

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { Tree } from "../src/models/tree.js";
+import { Tree } from "../../src/models/tree.js";
 
 describe("Tree", () => {
     test("adds each vertex only once", () => {

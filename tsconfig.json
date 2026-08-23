@@ -17,6 +17,7 @@
   },
   "include": [
     "maze-exploration-agent/**/*.ts",
+    "llm-maze-exploration-agent/**/*.ts",
     "secret-number/**/*.ts",
     "visualization/**/*.ts"
   ],

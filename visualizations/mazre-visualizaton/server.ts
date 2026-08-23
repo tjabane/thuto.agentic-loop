@@ -6,16 +6,16 @@ import {
 } from "node:http";
 import { extname, join } from "node:path";
 
-import { Agent } from "../llm-maze-exploration-agent/src/agent.js";
-import { Enviroment } from "../llm-maze-exploration-agent/src/enviroment.js";
-import { LLMClient } from "../llm-maze-exploration-agent/src/llm/client.js";
-import { LlmActionPlanner } from "../llm-maze-exploration-agent/src/llm/planner.js";
-import { parseVertexId } from "../llm-maze-exploration-agent/src/models/graph.js";
+import { Agent } from "../../04-maze-llm-agent/src/agent.js";
+import { Enviroment } from "../../04-maze-llm-agent/src/enviroment.js";
+import { LLMClient } from "../../04-maze-llm-agent/src/llm/client.js";
+import { LlmActionPlanner } from "../../04-maze-llm-agent/src/llm/planner.js";
+import { parseVertexId } from "../../04-maze-llm-agent/src/models/graph.js";
 import type {
     Direction,
     NodeInformation,
     Position,
-} from "../llm-maze-exploration-agent/src/models/position.js";
+} from "../../04-maze-llm-agent/src/models/position.js";
 import type {
     MazeConfiguration,
     MazeRunResponse,
@@ -25,7 +25,11 @@ import type {
 
 const PORT = Number(process.env.VISUALIZATION_PORT ?? 3000);
 const MAX_ACTIONS = Number(process.env.LLM_E2E_MAX_ACTIONS ?? 25);
-const VISUALIZATION_ROOT = join(process.cwd(), "visualization");
+const VISUALIZATION_ROOT = join(
+    process.cwd(),
+    "visualizations",
+    "mazre-visualizaton",
+);
 const visualDirections: Record<Direction, VisualDirection> = {
     up: "north",
     right: "east",

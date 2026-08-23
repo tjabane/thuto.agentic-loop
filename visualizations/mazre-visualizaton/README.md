@@ -1,4 +1,4 @@
-# Maze visualization
+# Solution 04: Maze LLM agent visualization
 
 The visualization runs the LLM agent on a local server so the OpenAI API key is
 never exposed to browser JavaScript. Start it from the repository root:

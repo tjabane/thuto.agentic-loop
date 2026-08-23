@@ -28,7 +28,7 @@ which actions have visible consequences and the policy cannot read hidden
 environment state.
 
 Use the existing
-[maze exploration agent specification](./maze-exploration-agent/README.md) as
+[maze exploration agent specification](./03-maze-determistic/README.md) as
 the starting point.
 
 ## Exercise 2: Tool interface and dispatcher

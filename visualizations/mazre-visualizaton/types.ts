@@ -1,4 +1,4 @@
-import type { Position } from "../llm-maze-exploration-agent/src/models/position.js";
+import type { Position } from "../../04-maze-llm-agent/src/models/position.js";
 
 type VisualDirection = "north" | "east" | "south" | "west";
 

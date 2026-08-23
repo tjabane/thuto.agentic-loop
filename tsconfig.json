@@ -16,10 +16,11 @@
     "declaration": true
   },
   "include": [
-    "maze-exploration-agent/**/*.ts",
-    "llm-maze-exploration-agent/**/*.ts",
-    "secret-number/**/*.ts",
-    "visualization/**/*.ts"
+    "01-secret-number-exit-condition-loop/**/*.ts",
+    "02-secret-number-reason-act-observe-loop/**/*.ts",
+    "03-maze-determistic/**/*.ts",
+    "04-maze-llm-agent/**/*.ts",
+    "visualizations/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

@@ -14,4 +14,19 @@ type State = {
     isExistLocked: boolean;
 }
 
-export type {Position, Direction, State}
+/** Information observable at the agent's current maze node. */
+type NodeInformation = {
+    /** The coordinates of the node being observed. */
+    position: Position;
+
+    /** Whether an uncollected key is present at this node. */
+    hasKey: boolean;
+
+    /** Whether the maze exit is present at this node. */
+    hasExit: boolean;
+
+    /** Whether the maze exit is currently locked. */
+    isExitLocked: boolean;
+}
+
+export type {Position, Direction, NodeInformation, State}

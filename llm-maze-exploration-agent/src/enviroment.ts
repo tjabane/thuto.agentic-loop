@@ -1,4 +1,4 @@
-import type {Direction, Position, State} from "./models/position.js";   
+import type {Direction, NodeInformation, Position, State} from "./models/position.js";   
 
 /**
  * Represents the maze in which an agent searches for a key and an exit.
@@ -128,6 +128,28 @@ class Enviroment {
             agentPostion: this.agentPostion,
             isKeyTaken: this.isKeyTaken,
             isExistLocked: this.isExistLocked,
+        }
+    }
+
+    /**
+     * Returns information observable at the agent's current node.
+     *
+     * The method does not accept a position, so nodes elsewhere in the maze
+     * cannot be inspected before the agent visits them.
+     *
+     * @returns A snapshot of the agent's current node.
+     */
+    public inspectCurrentNode(): NodeInformation {
+        return {
+            position: {...this.agentPostion},
+            hasKey:
+                !this.isKeyTaken &&
+                this.positionsMatch(this.agentPostion, this.keyPosition),
+            hasExit: this.positionsMatch(
+                this.agentPostion,
+                this.existPosition,
+            ),
+            isExitLocked: this.isExistLocked,
         }
     }
 

@@ -171,4 +171,39 @@ describe("Enviroment", () => {
             isExistLocked: false,
         })
     })
+
+    test("inspects only the agent's current node", () => {
+        const enviroment = new Enviroment(
+            3,
+            {x: 1, y: 0},
+            {x: 2, y: 0},
+            new Set(),
+        )
+
+        assert.deepEqual(enviroment.inspectCurrentNode(), {
+            position: {x: 0, y: 0},
+            hasKey: false,
+            hasExit: false,
+            isExitLocked: true,
+        })
+
+        enviroment.move("right")
+        assert.deepEqual(enviroment.inspectCurrentNode(), {
+            position: {x: 1, y: 0},
+            hasKey: true,
+            hasExit: false,
+            isExitLocked: true,
+        })
+
+        enviroment.takeKey()
+        assert.equal(enviroment.inspectCurrentNode().hasKey, false)
+
+        enviroment.move("right")
+        assert.deepEqual(enviroment.inspectCurrentNode(), {
+            position: {x: 2, y: 0},
+            hasKey: false,
+            hasExit: true,
+            isExitLocked: true,
+        })
+    })
 })

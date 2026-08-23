@@ -62,6 +62,21 @@ The harness, not the model, owns:
 Run the deterministic and LLM policies against the same maze scenarios.
 Compare success rate, action count, invalid calls, latency, and cost.
 
+## Exercise 4: Conversation-history maze agent
+
+Add a model-facing conversation history to the LLM maze agent. Preserve the
+system prompt, append the model's selected actions and verified tool results,
+and give the model the current verified state on each turn.
+
+Keep `AgentState` and environment state authoritative: conversation history is
+context, not proof that an action succeeded. Compare the existing summary-only
+approach with full and bounded histories using the same maze configurations.
+Measure success rate, repeated actions, action count, invalid calls, latency,
+tokens, and cost.
+
+The detailed plan is in
+[solution 05](./05-maze-conversation-history-agent/README.md).
+
 ## Completion boundary
 
 The project ends after the LLM and deterministic policies have been compared

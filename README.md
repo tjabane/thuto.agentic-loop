@@ -1,6 +1,6 @@
 # Thuto Agentic Loop
 
-A TypeScript learning workspace that builds an agentic control loop in four
+A TypeScript learning workspace that builds an agentic control loop in five
 small steps: start with a terminating loop, make Reason–Act–Observe explicit,
 add deterministic action selection in a maze, and finally let an LLM choose
 maze actions inside a validated harness.
@@ -99,6 +99,14 @@ npm run test:llm:live
 `LLM_E2E_MAX_ACTIONS` limits the number of environment actions in each
 scenario. Do not commit API keys to the repository.
 
+### 05 — Maze agent with conversation history (planned)
+
+[`05-maze-conversation-history-agent/`](./05-maze-conversation-history-agent/README.md)
+plans a comparison between the current summary-only LLM agent and versions
+that provide full or bounded conversation history. The model would receive its
+previous action selections and verified tool results, while the harness remains
+the sole authority for state changes and success.
+
 ## Maze visualization
 
 [`visualizations/maze-visualization/`](./visualizations/maze-visualization/README.md)
@@ -165,6 +173,7 @@ unless explicitly enabled.
 02-secret-number-reason-act-observe-loop/
 03-maze-determistic/
 04-maze-llm-agent/
+05-maze-conversation-history-agent/
 visualizations/
   maze-visualization/
   secret-number-visualization.html

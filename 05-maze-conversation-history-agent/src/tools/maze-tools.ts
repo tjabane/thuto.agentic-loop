@@ -80,7 +80,7 @@ function createMazeTools(enviroment: Enviroment): Tool[] {
                     };
                 }
 
-                const before = enviroment.inspectCurrentNode().position;
+                const before = enviroment.getState().agentPostion;
                 const position = enviroment.move(input.direction);
                 const moved =
                     before.x !== position.x || before.y !== position.y;

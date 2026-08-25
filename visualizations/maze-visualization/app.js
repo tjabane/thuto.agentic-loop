@@ -156,7 +156,7 @@
       replay(
         body.trace,
         body.finalPosition,
-        body.terminationReason === "action_limit" ? `Agent stopped after ${body.actionCount} actions` : void 0
+        body.terminationReason === "action_limit" ? `Agent stopped after ${body.actionCount} actions` : body.terminationReason === "incomplete" ? "Agent stopped before unlocking the exit" : void 0
       );
     } catch (cause) {
       const error = cause instanceof Error ? cause.message : String(cause);

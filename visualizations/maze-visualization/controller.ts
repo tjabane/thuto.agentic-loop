@@ -216,7 +216,9 @@ async function runAgent(): Promise<void> {
             body.finalPosition,
             body.terminationReason === "action_limit"
                 ? `Agent stopped after ${body.actionCount} actions`
-                : undefined,
+                : body.terminationReason === "incomplete"
+                  ? "Agent stopped before unlocking the exit"
+                  : undefined,
         );
     } catch (cause) {
         const error = cause instanceof Error ? cause.message : String(cause);

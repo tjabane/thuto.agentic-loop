@@ -21,7 +21,7 @@ type MazeConfiguration = {
 type MazeRunResponse = {
     trace: VisualEvent[];
     finalPosition: Position;
-    terminationReason: "success" | "action_limit";
+    terminationReason: "success" | "action_limit" | "incomplete";
     actionCount: number;
 };
 

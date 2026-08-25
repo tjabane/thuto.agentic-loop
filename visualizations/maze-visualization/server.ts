@@ -6,16 +6,15 @@ import {
 } from "node:http";
 import { extname, join } from "node:path";
 
-import { Agent } from "../../04-maze-llm-agent/src/agent.js";
 import { Enviroment } from "../../04-maze-llm-agent/src/enviroment.js";
-import { LLMClient } from "../../04-maze-llm-agent/src/llm/client.js";
-import { LlmActionPlanner } from "../../04-maze-llm-agent/src/llm/planner.js";
-import { parseVertexId } from "../../04-maze-llm-agent/src/models/graph.js";
 import type {
     Direction,
     NodeInformation,
     Position,
 } from "../../04-maze-llm-agent/src/models/position.js";
+import { Agent } from "../../05-maze-conversation-history-agent/src/agent.js";
+import { LLMClient } from "../../05-maze-conversation-history-agent/src/llm/client.js";
+import { createMazeTools } from "../../05-maze-conversation-history-agent/src/tools/maze-tools.js";
 import type {
     MazeConfiguration,
     MazeRunResponse,
@@ -121,22 +120,57 @@ async function runMaze(
         configuration.exit,
         new Set(configuration.blockedCells),
     );
+    let actionCount = 0;
+    const tools = createMazeTools(enviroment).map((tool) => ({
+        ...tool,
+        async execute(input: unknown) {
+            actionCount += 1;
+            return tool.execute(input);
+        },
+    }));
     const client = new LLMClient();
-    const planner = new LlmActionPlanner(client);
-    const agent = new Agent(planner);
-    const result = await agent.run(enviroment, MAX_ACTIONS);
-    const finalPosition = parseVertexId(result.finalState.position);
+    const agent = new Agent(
+        `Explore this unknown 3x3 maze through the available tools.
+        Find and take the key, find the exit, and unlock it.
+        Your conversation with the tools is your only memory of the maze.
+        Do not claim completion until unlockExit reports exitUnlocked as true.
+        Request one tool at a time. After the exit is unlocked, return a short final response.`,
+        tools,
+        client,
+    );
+
+    let reachedTurnLimit = false;
+    try {
+        await agent.run(MAX_ACTIONS);
+    } catch (error) {
+        if (
+            error instanceof Error &&
+            error.message === "Maximum number of turns reached"
+        ) {
+            reachedTurnLimit = true;
+        } else {
+            throw error;
+        }
+    }
+
+    const finalState = enviroment.getState();
+    const succeeded = !finalState.isExistLocked;
+    const terminationReason = succeeded
+        ? "success"
+        : reachedTurnLimit
+          ? "action_limit"
+          : "incomplete";
 
     enviroment.trace.push({
         type: "exit",
-        succeeded: result.terminationReason === "success",
+        succeeded,
     });
 
     return {
         trace: enviroment.trace,
-        finalPosition,
-        terminationReason: result.terminationReason,
-        actionCount: result.actionCount,
+        finalPosition: { ...finalState.agentPostion },
+        terminationReason,
+        actionCount,
     };
 }
 

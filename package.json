@@ -6,6 +6,7 @@
     "scripts": {
         "build": "tsc",
         "test:llm:live": "tsx --test 04-maze-llm-agent/tests/integration/llm-live.test.ts",
+        "test:conversation:live": "tsx --test 05-maze-conversation-history-agent/tests/integration/llm-live.test.ts",
         "test": "tsx --test {01-secret-number-exit-condition-loop,02-secret-number-reason-act-observe-loop,03-maze-determistic,04-maze-llm-agent,05-maze-conversation-history-agent}/**/*.test.ts",
         "typecheck": "tsc --noEmit",
         "visualization:build": "esbuild visualizations/maze-visualization/controller.ts --bundle --platform=browser --format=iife --outfile=visualizations/maze-visualization/app.js",

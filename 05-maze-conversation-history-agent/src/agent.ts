@@ -1,5 +1,6 @@
-import OpenAI from "openai";
+import type OpenAI from "openai";
 
+import type { ILLMClient } from "./llm/client.js";
 import type { Tool, ToolResult } from "./tools/tool.js";
 
 /**
@@ -10,26 +11,22 @@ class Agent {
     /** Model-facing memory accumulated during the current run. */
     private context: OpenAI.Responses.ResponseInput;
 
-    /** OpenAI model used to select tool calls and produce the final response. */
-    private model: string;
-
     /** Environment tools available to the model and execution harness. */
     private tools: Tool[];
 
     /** Client used to request model responses. */
-    private readonly llmClient: OpenAI;
+    private readonly llmClient: ILLMClient;
 
     /**
      * Creates an agent with an initial system instruction and a set of tools.
      *
      * @param systemPrompt - Stable instructions that govern the conversation.
      * @param tools - Environment capabilities the model may request.
-     * @param model - OpenAI model used for each turn.
+     * @param llmClient - Model client used to continue the conversation.
      */
-    constructor(systemPrompt: string, tools: Tool[], model = "gpt-5") {
+    constructor(systemPrompt: string, tools: Tool[], llmClient: ILLMClient) {
         this.tools = tools;
-        this.model = model;
-        this.llmClient = new OpenAI();
+        this.llmClient = llmClient;
         this.context = [
             {
                 role: "system",
@@ -65,31 +62,25 @@ class Agent {
             }));
 
         for (let turn = 0; turn < maxTurns; turn += 1) {
-            const response = await this.llmClient.responses.create({
-                model: this.model,
-                input: this.context,
-                tools: toolDescriptions,
-                tool_choice: "auto",
-                parallel_tool_calls: false,
-                store: false,
-            });
-
-            for (const item of response.output) {
-                if (
-                    item.type === "message" ||
-                    item.type === "reasoning" ||
-                    item.type === "function_call"
-                ) {
-                    this.context.push(item);
-                }
+            if (process.env.LOG_AGENT_CONTEXT === "true") {
+                console.log(
+                    `Agent context before turn ${turn + 1}:\n${JSON.stringify(this.context, null, 2)}`,
+                );
             }
+
+            const response = await this.llmClient.getResponse(
+                this.context,
+                toolDescriptions,
+            );
+
+            this.context.push(...response.output);
 
             const toolCall = response.output.find(
                 (item) => item.type === "function_call",
             );
 
             if (toolCall === undefined) {
-                return response.output_text;
+                return response.outputText;
             }
 
             const tool = this.tools.find(

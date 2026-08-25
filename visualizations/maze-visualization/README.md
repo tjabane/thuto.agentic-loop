@@ -1,7 +1,9 @@
-# Solution 04: Maze LLM agent visualization
+# Solution 05: Conversation-history maze agent visualization
 
-The visualization runs the LLM agent on a local server so the OpenAI API key is
-never exposed to browser JavaScript. Start it from the repository root:
+The visualization runs the conversation-history agent on a local server so the
+OpenAI API key is never exposed to browser JavaScript. The agent remembers its
+model tool calls and verified environment results as conversation context.
+Start it from the repository root:
 
 ```text
 npm run visualization:start

@@ -20,6 +20,7 @@
     "02-secret-number-reason-act-observe-loop/**/*.ts",
     "03-maze-determistic/**/*.ts",
     "04-maze-llm-agent/**/*.ts",
+    "05-maze-conversation-history-agent/**/*.ts",
     "visualizations/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]

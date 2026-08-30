@@ -1,0 +1,9 @@
+{
+  "name": "@thuto/maze-conversation-history-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "openai": "^7.5.0"
+  }
+}

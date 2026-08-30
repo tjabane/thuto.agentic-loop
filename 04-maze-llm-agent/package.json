@@ -1,0 +1,13 @@
+{
+  "name": "@thuto/maze-llm-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test tests/unit",
+    "test:live": "bun test tests/integration/llm-live.test.ts"
+  },
+  "dependencies": {
+    "openai": "^7.5.0"
+  }
+}

@@ -5,6 +5,7 @@ import { Enviroment } from "../../../src/enviroment.js";
 import { GetStateTool } from "../../../src/tools/implementations/get-state-tool.js";
 import { InspectCurrentNodeTool } from "../../../src/tools/implementations/inspect-current-node-tool.js";
 import { MoveTool } from "../../../src/tools/implementations/move-tool.js";
+import { NoResultTool } from "../../../src/tools/implementations/no-result-tool.js";
 import { TakeKeyTool } from "../../../src/tools/implementations/take-key-tool.js";
 import { UnlockExitTool } from "../../../src/tools/implementations/unlock-exit-tool.js";
 import {
@@ -18,6 +19,16 @@ function createEnviroment(): Enviroment {
 }
 
 describe("environment tool implementations", () => {
+    test("NoResultTool reports an unavailable requested tool", async () => {
+        const tool = new NoResultTool("teleport");
+
+        assert.equal(tool.name, "teleport");
+        assert.deepEqual(await tool.execute({ x: 1, y: 1 }), {
+            success: false,
+            message: 'Requested tool "teleport" is unavailable.',
+        });
+    });
+
     test("validates raw inputs from their declared schemas", () => {
         assert.equal(isValidToolInput({ direction: "right" }, MOVE_TOOL_INPUT_SCHEMA), true);
         assert.equal(isValidToolInput({ direction: "sideways" }, MOVE_TOOL_INPUT_SCHEMA), false);

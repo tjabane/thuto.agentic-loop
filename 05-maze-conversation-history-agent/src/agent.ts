@@ -1,4 +1,5 @@
 import type { DecisionClient } from "./decision-client/decision-client-contracts.js";
+import { NoResultTool } from "./tools/implementations/no-result-tool.js";
 import type { Tool, ToolResult } from "./tools/tool-contracts.js";
 
 /**
@@ -42,17 +43,10 @@ class Agent {
             const tool = this.tools.find(candidate => candidate.name === action.name);
             const result =
                 tool === undefined
-                    ? Agent.unavailableToolResult(action.name)
+                    ? await new NoResultTool(action.name).execute(action.parameters)
                     : await tool.execute(action.parameters);
             this.toolResults.push(result);
         }
-    }
-
-    private static unavailableToolResult(name: string): ToolResult {
-        return {
-            success: false,
-            message: `Requested tool "${name}" is unavailable.`,
-        };
     }
 }
 

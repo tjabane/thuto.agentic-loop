@@ -1,5 +1,5 @@
-import type { History, LLMClient } from "./contracts.js";
-import type { Tool } from "./tool-contracts.js";
+import type { DecisionClient } from "./decision-client-contracts.js";
+import type { Tool, ToolResult } from "./tool-contracts.js";
 
 /**
  * Embodies an LLM in a constrained environment.
@@ -23,12 +23,13 @@ abstract class Agent {
     private readonly tools!: readonly Tool[];
 
     /**
-     * The conversation state for one agent run.
+     * Verified environment results accumulated during one agent run.
      *
-     * This history records only the LLM's requests and verified environment
-     * results, allowing the LLM to reason from what the body has experienced.
+     * The agent needs no separate history abstraction yet. This ordered list
+     * is the body's direct record of what happened and will later be provided
+     * to the LLM client as conversation context.
      */
-    private readonly history!: History;
+    private readonly toolResults: ToolResult[] = [];
 
     /**
      * Model-specific dependency that conducts the LLM side of the conversation.
@@ -36,14 +37,17 @@ abstract class Agent {
      * The client owns the prompt. The agent supplies it with conversation
      * history and later handles the environment interactions it requests.
      */
-    private readonly llmClient!: LLMClient;
+    private readonly decisionClient!: DecisionClient;
 
     /**
      * Runs the embodied-agent control loop.
      *
-     * A future implementation will repeatedly obtain an LLM response, execute
-     * each requested tool through the environment, append verified results to
-     * history, and stop when the conversation reaches its terminal condition.
+     * The run loop will:
+     *
+     * 1. Ask {@link DecisionClient} for the next action; stop if it returns no action.
+     * 2. Find and execute the requested tool.
+     * 3. Append the verified result to {@link toolResults}.
+     * 4. Repeat.
      *
      * This is the agent's only public operation.
      */

@@ -9,6 +9,17 @@
  * requires no input still uses `{}` with empty `properties` and
  * `additionalProperties: false`.
  */
+type ToolInputPrimitive = boolean | number | string;
+
+/** Schema for one primitive tool argument. */
+interface ToolInputPropertySchema {
+    /** JSON primitive type accepted for this argument. */
+    readonly type: "boolean" | "number" | "string";
+
+    /** Optional finite set of permitted values. */
+    readonly enum?: readonly ToolInputPrimitive[];
+}
+
 interface ToolInputSchema {
     /**
      * Declares the top-level JSON Schema type for this tool's arguments.
@@ -22,7 +33,7 @@ interface ToolInputSchema {
     readonly type: "object";
 
     /** Describes each permitted argument by name. */
-    readonly properties: Readonly<Record<string, unknown>>;
+    readonly properties: Readonly<Record<string, ToolInputPropertySchema>>;
 
     /** Names arguments that must be present in the input object. */
     readonly required?: readonly string[];
@@ -77,4 +88,4 @@ interface Tool {
     execute(input: unknown): Promise<ToolResult>;
 }
 
-export type { Tool, ToolInputSchema, ToolResult };
+export type { Tool, ToolInputPrimitive, ToolInputPropertySchema, ToolInputSchema, ToolResult };

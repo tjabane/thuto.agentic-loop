@@ -1,5 +1,5 @@
 import type { DecisionClient } from "./decision-client-contracts.js";
-import type { Tool, ToolResult } from "./tool-contracts.js";
+import type { Tool, ToolResult } from "./tools/tool-contracts.js";
 
 /**
  * Embodies an LLM in a constrained environment.

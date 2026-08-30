@@ -1,4 +1,4 @@
-import type { Tool, ToolResult } from "./tool-contracts.js";
+import type { Tool, ToolResult } from "./tools/tool-contracts.js";
 
 /**
  * A requested tool call selected by the decision-maker.

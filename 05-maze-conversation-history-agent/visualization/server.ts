@@ -6,18 +6,15 @@ import {
 } from "node:http";
 import { extname, join } from "node:path";
 
-import { Agent } from "../../05-maze-conversation-history-agent/src/agent.js";
-import { OpenAiDecisionClient } from "../../05-maze-conversation-history-agent/src/decision-client/openai-decision-client.js";
-import { Enviroment } from "../../05-maze-conversation-history-agent/src/enviroment.js";
+import { Enviroment } from "../../04-maze-llm-agent/src/enviroment.js";
 import type {
     Direction,
     NodeInformation,
     Position,
-} from "../../05-maze-conversation-history-agent/src/models/position.js";
-import { InspectCurrentNodeTool } from "../../05-maze-conversation-history-agent/src/tools/implementations/inspect-current-node-tool.js";
-import { MoveTool } from "../../05-maze-conversation-history-agent/src/tools/implementations/move-tool.js";
-import { TakeKeyTool } from "../../05-maze-conversation-history-agent/src/tools/implementations/take-key-tool.js";
-import { UnlockExitTool } from "../../05-maze-conversation-history-agent/src/tools/implementations/unlock-exit-tool.js";
+} from "../../04-maze-llm-agent/src/models/position.js";
+import { Agent } from "../../05-maze-conversation-history-agent/src/agent.js";
+import { LLMClient } from "../../05-maze-conversation-history-agent/src/llm/client.js";
+import { createMazeTools } from "../../05-maze-conversation-history-agent/src/tools/maze-tools.js";
 import type {
     MazeConfiguration,
     MazeRunResponse,
@@ -124,39 +121,43 @@ async function runMaze(
         new Set(configuration.blockedCells),
     );
     let actionCount = 0;
-    const tools = [
-        new MoveTool(enviroment),
-        new TakeKeyTool(enviroment),
-        new UnlockExitTool(enviroment),
-        new InspectCurrentNodeTool(enviroment),
-    ].map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
+    const tools = createMazeTools(enviroment).map((tool) => ({
+        ...tool,
         async execute(input: unknown) {
             actionCount += 1;
             return tool.execute(input);
         },
     }));
+    const client = new LLMClient();
     const agent = new Agent(
+        `Explore this unknown 3x3 maze through the available tools.
+        Find and take the key, find the exit, and unlock it.
+        Your conversation with the tools is your only memory of the maze.
+        Do not claim completion until unlockExit reports exitUnlocked as true.
+        Request one tool at a time. After the exit is unlocked, return a short final response.`,
         tools,
-        new OpenAiDecisionClient(
-            {},
-            `Explore this unknown 3x3 maze through the available tools.
-             Find and take the key, find the exit, and unlock it.
-             Inspect the current node before acting and after every successful move.
-             Use only verified tool results as evidence. Request one tool at a time.
-             After the exit is unlocked, request no further tool.`,
-        ),
+        client,
     );
 
-    await agent.run(MAX_ACTIONS);
+    let reachedTurnLimit = false;
+    try {
+        await agent.run(MAX_ACTIONS);
+    } catch (error) {
+        if (
+            error instanceof Error &&
+            error.message === "Maximum number of turns reached"
+        ) {
+            reachedTurnLimit = true;
+        } else {
+            throw error;
+        }
+    }
 
     const finalState = enviroment.getState();
     const succeeded = !finalState.isExistLocked;
     const terminationReason = succeeded
         ? "success"
-        : actionCount >= MAX_ACTIONS
+        : reachedTurnLimit
           ? "action_limit"
           : "incomplete";
 

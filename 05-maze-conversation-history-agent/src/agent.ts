@@ -9,49 +9,51 @@ import type { Tool, ToolResult } from "./tools/tool-contracts.js";
  * and will coordinate the agent loop and tool-calling loop. It never decides
  * maze outcomes: tools return those outcomes from the environment.
  *
- * This class is intentionally only a contract at this stage. Its dependencies
- * and public operation are declared here without behaviour.
+ * Tools and the decision client are injected at the composition boundary.
+ * The agent dispatches requested capabilities, records their verified results,
+ * and stops when the decision client requests no further tool.
  */
-abstract class Agent {
-    /**
-     * Capabilities available to the embodied agent.
-     *
-     * Tools are injected dependencies. They define the complete set of
-     * interactions the LLM may request; no environment interaction may bypass
-     * this list.
-     */
-    private readonly tools!: readonly Tool[];
-
-    /**
-     * Verified environment results accumulated during one agent run.
-     *
-     * The agent needs no separate history abstraction yet. This ordered list
-     * is the body's direct record of what happened and will later be provided
-     * to the LLM client as conversation context.
-     */
+class Agent {
+    /** Verified environment results accumulated during one agent run. */
     private readonly toolResults: ToolResult[] = [];
 
-    /**
-     * Model-specific dependency that conducts the LLM side of the conversation.
-     *
-     * The client owns the prompt. The agent supplies it with conversation
-     * history and later handles the environment interactions it requests.
-     */
-    private readonly decisionClient!: DecisionClient;
+    constructor(
+        private readonly tools: readonly Tool[],
+        private readonly decisionClient: DecisionClient,
+    ) {}
 
     /**
-     * Runs the embodied-agent control loop.
+     * Runs until the decision client requests no further tool or the attempt
+     * limit is reached.
      *
-     * The run loop will:
-     *
-     * 1. Ask {@link DecisionClient} for the next action; stop if it returns no action.
-     * 2. Find and execute the requested tool.
-     * 3. Append the verified result to {@link toolResults}.
-     * 4. Repeat.
-     *
-     * This is the agent's only public operation.
+     * @param attemptCount - Maximum number of requested tool executions.
      */
-    public abstract run(): Promise<void>;
+    public async run(attemptCount: number = 25): Promise<void> {
+        if (!Number.isSafeInteger(attemptCount) || attemptCount < 0) {
+            throw new RangeError("Attempt count must be a non-negative safe integer.");
+        }
+
+        for (let attempt = 0; attempt < attemptCount; attempt += 1) {
+            const action = await this.decisionClient.decide(this.toolResults, this.tools);
+            if (action === undefined) {
+                return;
+            }
+
+            const tool = this.tools.find(candidate => candidate.name === action.name);
+            const result =
+                tool === undefined
+                    ? Agent.unavailableToolResult(action.name)
+                    : await tool.execute(action.parameters);
+            this.toolResults.push(result);
+        }
+    }
+
+    private static unavailableToolResult(name: string): ToolResult {
+        return {
+            success: false,
+            message: `Requested tool "${name}" is unavailable.`,
+        };
+    }
 }
 
 export { Agent };

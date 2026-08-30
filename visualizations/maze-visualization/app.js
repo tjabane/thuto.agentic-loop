@@ -1,4 +1,3 @@
-"use strict";
 (() => {
   // visualizations/maze-visualization/controller.ts
   var mazeConfiguration = {
@@ -9,15 +8,9 @@
     key: { x: 2, y: 0 },
     exit: { x: 2, y: 2 }
   };
-  var runButton = document.getElementById(
-    "autoButton"
-  );
-  var randomButton = document.getElementById(
-    "randomButton"
-  );
-  var resetButton = document.getElementById(
-    "resetButton"
-  );
+  var runButton = document.getElementById("autoButton");
+  var randomButton = document.getElementById("randomButton");
+  var resetButton = document.getElementById("resetButton");
   var replayTimer;
   function makePositionKey(position) {
     return `${position.x},${position.y}`;
@@ -25,8 +18,8 @@
   function positionsAreConnected(config) {
     const blocked = new Set(config.blockedCells.map(makePositionKey));
     const pending = [config.start];
-    const visited = /* @__PURE__ */ new Set([makePositionKey(config.start)]);
-    const targets = /* @__PURE__ */ new Set([
+    const visited = new Set([makePositionKey(config.start)]);
+    const targets = new Set([
       makePositionKey(config.key),
       makePositionKey(config.exit)
     ]);
@@ -38,7 +31,8 @@
     ];
     while (pending.length > 0) {
       const current = pending.shift();
-      if (!current) break;
+      if (!current)
+        break;
       targets.delete(makePositionKey(current));
       for (const [xOffset, yOffset] of offsets) {
         const neighbour = {
@@ -61,18 +55,14 @@
     const positions = Array.from({ length: rows * columns }, (_, index) => ({
       x: index % columns,
       y: Math.floor(index / columns)
-    })).filter(
-      (position) => makePositionKey(position) !== makePositionKey(start)
-    );
+    })).filter((position) => makePositionKey(position) !== makePositionKey(start));
     while (true) {
       const shuffled = [...positions].sort(() => Math.random() - 0.5);
       const key = shuffled[0];
       const exit = shuffled[1];
-      if (!key || !exit) continue;
-      const blockedCells = shuffled.slice(
-        2,
-        2 + (Math.random() < 0.5 ? 1 : 2)
-      );
+      if (!key || !exit)
+        continue;
+      const blockedCells = shuffled.slice(2, 2 + (Math.random() < 0.5 ? 1 : 2));
       const candidate = {
         rows,
         columns,
@@ -81,7 +71,8 @@
         exit,
         blockedCells
       };
-      if (positionsAreConnected(candidate)) return candidate;
+      if (positionsAreConnected(candidate))
+        return candidate;
     }
   }
   function describe(event) {
@@ -100,8 +91,10 @@
   }
   function applyEvent(event) {
     if (event.type === "move") {
-      if (event.succeeded) window.mazeVisualizer.move(event.direction);
-      else window.mazeVisualizer.showBlockedMove(event.direction);
+      if (event.succeeded)
+        window.mazeVisualizer.move(event.direction);
+      else
+        window.mazeVisualizer.showBlockedMove(event.direction);
     } else if (event.type === "takeKey" && event.succeeded) {
       window.mazeVisualizer.takeKey();
     } else if (event.type === "unlockExit" && event.succeeded) {
@@ -121,27 +114,31 @@
         replayTimer = window.setTimeout(next, 450);
         return;
       }
-      replayTimer = void 0;
+      replayTimer = undefined;
       window.mazeVisualizer.setState({
         x: finalPosition.x,
         y: finalPosition.y
       });
-      if (error) window.mazeVisualizer.showMessage(error);
+      if (error)
+        window.mazeVisualizer.showMessage(error);
       if (runButton) {
         runButton.disabled = false;
         runButton.textContent = "Run LLM agent";
       }
-      if (randomButton) randomButton.disabled = false;
+      if (randomButton)
+        randomButton.disabled = false;
     };
     next();
   }
   async function runAgent() {
-    if (replayTimer !== void 0) return;
+    if (replayTimer !== undefined)
+      return;
     if (runButton) {
       runButton.disabled = true;
-      runButton.textContent = "Asking the LLM\u2026";
+      runButton.textContent = "Asking the LLM…";
     }
-    if (randomButton) randomButton.disabled = true;
+    if (randomButton)
+      randomButton.disabled = true;
     try {
       const response = await fetch("/api/run", {
         method: "POST",
@@ -152,12 +149,9 @@
       if (!response.ok || "error" in body) {
         throw new Error("error" in body ? body.error : "Maze run failed.");
       }
-      if (runButton) runButton.textContent = "Replaying\u2026";
-      replay(
-        body.trace,
-        body.finalPosition,
-        body.terminationReason === "action_limit" ? `Agent stopped after ${body.actionCount} actions` : body.terminationReason === "incomplete" ? "Agent stopped before unlocking the exit" : void 0
-      );
+      if (runButton)
+        runButton.textContent = "Replaying…";
+      replay(body.trace, body.finalPosition, body.terminationReason === "action_limit" ? `Agent stopped after ${body.actionCount} actions` : body.terminationReason === "incomplete" ? "Agent stopped before unlocking the exit" : undefined);
     } catch (cause) {
       const error = cause instanceof Error ? cause.message : String(cause);
       replay([], mazeConfiguration.start, error);
@@ -165,7 +159,8 @@
   }
   runButton?.addEventListener("click", () => void runAgent());
   randomButton?.addEventListener("click", () => {
-    if (replayTimer !== void 0) return;
+    if (replayTimer !== undefined)
+      return;
     mazeConfiguration = generateRandomMaze();
     window.mazeVisualizer.configure(mazeConfiguration);
   });

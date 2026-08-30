@@ -19,8 +19,8 @@
         "test:llm:live": "bun --filter @thuto/maze-llm-agent run test:live",
         "test": "bun --filter @thuto/secret-number-exit-condition-loop --filter @thuto/secret-number-reason-act-observe-loop --filter @thuto/maze-deterministic --filter @thuto/maze-llm-agent test",
         "typecheck": "tsc --noEmit",
-        "visualization:build": "esbuild visualizations/maze-visualization/controller.ts --bundle --platform=browser --format=iife --outfile=visualizations/maze-visualization/app.js",
-        "visualization:start": "npm run visualization:build && tsx visualizations/maze-visualization/server.ts",
+        "visualization:build": "bun build visualizations/maze-visualization/controller.ts --target browser --format iife --outfile visualizations/maze-visualization/app.js",
+        "visualization:start": "bun run visualization:build && bun visualizations/maze-visualization/server.ts",
         "lint": "biome lint .",
         "lint:fix": "biome lint --write .",
         "format": "biome format --write ."
@@ -28,7 +28,6 @@
     "devDependencies": {
         "@biomejs/biome": "2.5.8",
         "@types/node": "latest",
-        "tsx": "latest",
         "typescript": "latest"
     }
 }

@@ -26,7 +26,7 @@ and termination conditions are easy to see.
 Run its tests:
 
 ```powershell
-npx tsx --test 01-secret-number-exit-condition-loop/index.test.ts
+bun test 01-secret-number-exit-condition-loop/index.test.ts
 ```
 
 ### 02 — Secret number: Reason–Act–Observe loop
@@ -42,7 +42,7 @@ an ordinary loop to a ReAct-style agent.
 Run its tests:
 
 ```powershell
-npx tsx --test 02-secret-number-reason-act-observe-loop/index.test.ts
+bun test 02-secret-number-reason-act-observe-loop/index.test.ts
 ```
 
 Open its standalone visualization in a browser:
@@ -69,7 +69,7 @@ and the action limit.
 Run its tests:
 
 ```powershell
-npx tsx --test 03-maze-determistic/tests/*.test.ts
+bun test 03-maze-determistic/tests
 ```
 
 ### 04 — LLM maze agent
@@ -82,7 +82,7 @@ responsible only for selecting the next supported action from verified state.
 Its normal tests use test doubles and do not make API requests:
 
 ```powershell
-npx tsx --test 04-maze-llm-agent/tests/unit/*.test.ts
+bun test 04-maze-llm-agent/tests/unit
 ```
 
 Live integration tests make billable OpenAI API requests. Configure them in
@@ -93,7 +93,7 @@ $env:OPENAI_API_KEY="your-api-key"
 $env:OPENAI_MODEL="gpt-5.6-luna"
 $env:RUN_LIVE_LLM_TESTS="true"
 $env:LLM_E2E_MAX_ACTIONS="25"
-npm run test:llm:live
+bun run test:llm:live
 ```
 
 `LLM_E2E_MAX_ACTIONS` limits the number of environment actions in each
@@ -119,7 +119,7 @@ Start it from the repository root:
 ```powershell
 $env:OPENAI_API_KEY="your-api-key"
 $env:OPENAI_MODEL="gpt-5.6-luna"
-npm run visualization:start
+bun run visualization:start
 ```
 
 Then open [http://localhost:3000](http://localhost:3000). The page can generate
@@ -128,21 +128,20 @@ a random solvable 3-by-3 maze, run the LLM agent, and replay its actions.
 To rebuild only the browser bundle:
 
 ```powershell
-npm run visualization:build
+bun run visualization:build
 ```
 
 ## Setup
 
 Requirements:
 
-- Node.js 20 or newer;
-- npm;
+- Bun 1.4 or newer;
 - an OpenAI API key only for live LLM tests and the maze visualization.
 
 Install dependencies from the repository root:
 
 ```powershell
-npm install
+bun install
 ```
 
 ## Workspace commands
@@ -150,16 +149,16 @@ npm install
 Run all tests except billable live LLM scenarios:
 
 ```powershell
-npm test
+bun test
 ```
 
 Other useful commands:
 
 ```powershell
-npm run typecheck
-npm run build
-npm run lint
-npm run format
+bun run typecheck
+bun run build
+bun run lint
+bun run format
 ```
 
 Compiled TypeScript is written to `dist/`. The normal test command discovers

@@ -6,7 +6,7 @@ model tool calls and verified environment results as conversation context.
 Start it from the repository root:
 
 ```text
-npm run visualization:start
+bun run visualization:start
 ```
 
 Then open `http://localhost:3000`. Use **Random maze** to generate a new solvable
@@ -15,7 +15,7 @@ Then open `http://localhost:3000`. Use **Random maze** to generate a new solvabl
 Rebuild the browser controller after changing the TypeScript implementation:
 
 ```text
-npm run visualization:build
+bun run visualization:build
 ```
 
 The animation is also available through the global presentation API:

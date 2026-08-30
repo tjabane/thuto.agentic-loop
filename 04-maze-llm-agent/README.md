@@ -192,7 +192,7 @@ $env:OPENAI_API_KEY="your-api-key"
 $env:OPENAI_MODEL="gpt-5.6-luna"
 $env:RUN_LIVE_LLM_TESTS="true"
 $env:LLM_E2E_MAX_ACTIONS="25"
-npm run test:llm:live
+bun run test:llm:live
 ```
 
 The suite runs sequentially and covers a shared key/exit starting node, key-first

@@ -1,4 +1,4 @@
-import type { DecisionClient } from "./decision-client-contracts.js";
+import type { DecisionClient } from "./decision-client/decision-client-contracts.js";
 import type { Tool, ToolResult } from "./tools/tool-contracts.js";
 
 /**

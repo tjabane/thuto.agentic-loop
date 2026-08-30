@@ -4,6 +4,7 @@ import { describe, test } from "node:test";
 import type OpenAI from "openai";
 
 import { OpenAiDecisionClient } from "../../../src/decision-client/openai-decision-client.js";
+import { GraphTool } from "../../../src/tools/implementations/graph-tool.js";
 import type { Tool } from "../../../src/tools/tool-contracts.js";
 
 const moveTool: Tool = {
@@ -73,6 +74,38 @@ describe("OpenAiDecisionClient", () => {
         );
 
         assert.equal(await client.decide([], [moveTool]), undefined);
+    });
+
+    test("serializes array tool properties for the decision provider", async () => {
+        let request: unknown;
+        const graphTool = new GraphTool();
+        const client = new OpenAiDecisionClient(
+            {
+                client: createClient({ output: [] }, value => {
+                    request = value;
+                }),
+            },
+            TEST_SYSTEM_PROMPT,
+        );
+
+        await client.decide([], [graphTool]);
+
+        assert.deepEqual((request as { tools: unknown[] }).tools[0], {
+            type: "function",
+            name: "graph",
+            description:
+                "Add a node and its adjacent edge nodes, then return the full discovered undirected graph.",
+            parameters: {
+                type: "object",
+                properties: {
+                    node: { type: "string" },
+                    edges: { type: "array", items: { type: "string" } },
+                },
+                required: ["node", "edges"],
+                additionalProperties: false,
+            },
+            strict: true,
+        });
     });
 
     test("rejects malformed function-call arguments", async () => {

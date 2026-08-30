@@ -37,6 +37,9 @@ h2 { margin: 0 0 14px; font-size: .78rem; font-weight: 600; color: var(--muted);
 .compass { position: absolute; top: 20px; right: 24px; color: var(--muted); font-size: .78rem; letter-spacing: .1em; }
 .compass span { color: var(--cyan); font-size: 1.2rem; }
 .maze { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); width: min(100%, 540px); aspect-ratio: 1; border: 5px solid var(--line); border-radius: 20px; overflow: hidden; background: #c7f0ff; }
+.maze #graphOverlay { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; pointer-events: none; }
+.graph-edge { stroke: var(--cyan); stroke-width: .06; stroke-linecap: round; opacity: .9; transition: x1 .25s, y1 .25s, x2 .25s, y2 .25s; }
+.graph-node { fill: var(--amber); stroke: var(--line); stroke-width: .03; }
 .cell { position: relative; display: flex; align-items: flex-end; justify-content: center; padding: 12px; border: 2px solid var(--line); overflow: hidden; background: #dff7ff; }
 .cell::before { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(141, 162, 189, .05); }
 .coordinate { position: absolute; top: 9px; left: 10px; color: var(--muted); font-family: ui-monospace, monospace; font-size: .72rem; }
@@ -71,6 +74,12 @@ button:hover { background: #ffb703; transform: translateY(-2px); } button:active
 .event-log ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
 .event-log li { padding-left: 12px; border-left: 2px solid var(--line); color: var(--muted); font-family: ui-monospace, monospace; font-size: .78rem; }
 .event-log li:first-child { color: var(--text); border-color: var(--cyan); }
+.action-stream { margin-top: 24px; padding: 20px; background: var(--panel); border: 4px solid var(--line); border-radius: 28px; box-shadow: 0 10px 0 rgba(39,48,67,.22); }
+.action-stream h2 { margin-bottom: 8px; }
+.action-stream ol { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; list-style: none; }
+.action-stream li { display: grid; gap: 4px; min-width: 0; padding: 10px 12px; border-left: 3px solid var(--green); background: rgba(223,247,255,.7); font-family: ui-monospace, monospace; font-size: .78rem; }
+.action-stream li.failed { border-color: var(--red); }
+.action-stream li span { overflow-wrap: anywhere; color: var(--muted); }
 
 @media (max-width: 800px) {
   .workspace { grid-template-columns: 1fr; }

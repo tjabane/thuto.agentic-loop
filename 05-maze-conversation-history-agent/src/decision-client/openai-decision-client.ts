@@ -94,10 +94,7 @@ class OpenAiDecisionClient implements DecisionClient {
         const properties = Object.fromEntries(
             Object.entries(schema.properties).map(([name, property]) => [
                 name,
-                {
-                    type: property.type,
-                    ...(property.enum === undefined ? {} : { enum: property.enum }),
-                },
+                OpenAiDecisionClient.toOpenAiPropertySchema(property),
             ]),
         );
 
@@ -106,6 +103,23 @@ class OpenAiDecisionClient implements DecisionClient {
             properties,
             ...(schema.required === undefined ? {} : { required: schema.required }),
             additionalProperties: schema.additionalProperties,
+        };
+    }
+
+    private static toOpenAiPropertySchema(property: ToolInputSchema["properties"][string]): Record<string, unknown> {
+        if (property.type === "array") {
+            return {
+                type: property.type,
+                items: {
+                    type: property.items.type,
+                    ...(property.items.enum === undefined ? {} : { enum: property.items.enum }),
+                },
+            };
+        }
+
+        return {
+            type: property.type,
+            ...(property.enum === undefined ? {} : { enum: property.enum }),
         };
     }
 }

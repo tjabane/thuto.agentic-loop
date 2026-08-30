@@ -1,33 +1,32 @@
-import type { Position } from "../../04-maze-llm-agent/src/models/position.js";
+import type { Position } from "../src/models/position.js";
+import type { ToolResult } from "../src/tools/tool-contracts.js";
 
-type VisualDirection = "north" | "east" | "south" | "west";
+type GraphSnapshot = {
+    readonly nodes: readonly string[];
+    readonly edges: readonly (readonly [string, string])[];
+};
 
-type VisualEvent =
-    | { type: "inspect"; position: Position }
-    | { type: "move"; direction: VisualDirection; succeeded: boolean }
-    | { type: "takeKey"; succeeded: boolean }
-    | { type: "unlockExit"; succeeded: boolean }
-    | { type: "exit"; succeeded: boolean };
+type VisualAction = {
+    readonly name: string;
+    readonly input: unknown;
+    readonly result: ToolResult;
+    readonly graph: GraphSnapshot;
+};
 
 type MazeConfiguration = {
-    rows: number;
-    columns: number;
-    blockedCells: Position[];
-    start: Position;
-    key: Position;
-    exit: Position;
+    readonly rows: 3;
+    readonly columns: 3;
+    readonly blockedCells: readonly Position[];
+    readonly start: Position;
+    readonly key: Position;
+    readonly exit: Position;
 };
 
 type MazeRunResponse = {
-    trace: VisualEvent[];
-    finalPosition: Position;
-    terminationReason: "success" | "action_limit" | "incomplete";
-    actionCount: number;
+    readonly trace: readonly VisualAction[];
+    readonly finalPosition: Position;
+    readonly terminationReason: "success" | "action_limit" | "incomplete";
+    readonly actionCount: number;
 };
 
-export type {
-    MazeConfiguration,
-    MazeRunResponse,
-    VisualDirection,
-    VisualEvent,
-};
+export type { GraphSnapshot, MazeConfiguration, MazeRunResponse, VisualAction };

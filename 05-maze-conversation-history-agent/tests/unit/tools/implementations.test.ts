@@ -48,7 +48,7 @@ describe("environment tool implementations", () => {
         assert.deepEqual(await tool.execute({ direction: "right" }), {
             success: true,
             message: "Agent moved successfully.",
-            data: { position: { x: 1, y: 0 } },
+            data: { direction: "right", position: { x: 1, y: 0 } },
         });
         assert.deepEqual(await tool.execute({ direction: "sideways" }), {
             success: false,
@@ -63,7 +63,7 @@ describe("environment tool implementations", () => {
         assert.deepEqual(await tool.execute({ direction: "up" }), {
             success: false,
             message: "Agent could not move in that direction.",
-            data: { position: { x: 0, y: 0 } },
+            data: { direction: "up", position: { x: 0, y: 0 } },
         });
     });
 

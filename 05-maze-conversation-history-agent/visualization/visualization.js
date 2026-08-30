@@ -16,6 +16,8 @@
   const inventoryText = document.getElementById("inventoryText");
   const exitText = document.getElementById("exitText");
   const eventLog = document.getElementById("eventLog");
+  const actionStream = document.getElementById("actionStream");
+  let graph = { nodes: [], edges: [] };
 
   function createInitialState() {
     return { x: mazeConfig.start.x, y: mazeConfig.start.y, hasKey: false, exitUnlocked: false };
@@ -61,11 +63,53 @@
       }
     }
 
+    const graphOverlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    graphOverlay.id = "graphOverlay";
+    graphOverlay.setAttribute("viewBox", `0 0 ${mazeConfig.columns} ${mazeConfig.rows}`);
+    graphOverlay.setAttribute("aria-hidden", "true");
+    maze.append(graphOverlay);
+
     const agent = document.createElement("div");
     agent.id = "agent";
     agent.className = "agent";
     agent.innerHTML = '<span class="agent-eye left"></span><span class="agent-eye right"></span>';
     maze.append(agent);
+    renderGraph();
+  }
+
+  function graphPosition(node) {
+    const coordinates = /^([0-2]),([0-2])$/.exec(node);
+    if (!coordinates) return undefined;
+    return { x: Number(coordinates[1]) + .5, y: Number(coordinates[2]) + .5 };
+  }
+
+  function renderGraph() {
+    const overlay = document.getElementById("graphOverlay");
+    if (!overlay) return;
+    overlay.replaceChildren();
+    for (const edge of graph.edges) {
+      if (!Array.isArray(edge) || edge.length !== 2) continue;
+      const from = graphPosition(edge[0]);
+      const to = graphPosition(edge[1]);
+      if (!from || !to) continue;
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", String(from.x));
+      line.setAttribute("y1", String(from.y));
+      line.setAttribute("x2", String(to.x));
+      line.setAttribute("y2", String(to.y));
+      line.classList.add("graph-edge");
+      overlay.append(line);
+    }
+    for (const node of graph.nodes) {
+      const position = graphPosition(node);
+      if (!position) continue;
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", String(position.x));
+      circle.setAttribute("cy", String(position.y));
+      circle.setAttribute("r", ".09");
+      circle.classList.add("graph-node");
+      overlay.append(circle);
+    }
   }
 
   function render() {
@@ -156,7 +200,9 @@
 
   function reset() {
     state = createInitialState();
+    graph = { nodes: [], edges: [] };
     eventLog.replaceChildren();
+    actionStream?.replaceChildren();
     render();
     setStatus("Ready");
     log("Visualization reset");
@@ -186,7 +232,9 @@
       };
       blocked = new Set(mazeConfig.blockedCells.map(cellKey));
       state = createInitialState();
+      graph = { nodes: [], edges: [] };
       eventLog.replaceChildren();
+      actionStream?.replaceChildren();
       buildMaze();
       render();
       setStatus("Random maze ready");
@@ -195,6 +243,25 @@
     setState(nextState) {
       state = { ...state, ...nextState };
       render();
+    },
+    updateGraph(nextGraph) {
+      graph = {
+        nodes: Array.isArray(nextGraph.nodes) ? [...nextGraph.nodes] : [],
+        edges: Array.isArray(nextGraph.edges) ? nextGraph.edges.map((edge) => [...edge]) : []
+      };
+      renderGraph();
+    },
+    showAction(action) {
+      if (!actionStream) return;
+      const item = document.createElement("li");
+      const title = document.createElement("strong");
+      title.textContent = action.name;
+      const details = document.createElement("span");
+      const input = JSON.stringify(action.input);
+      details.textContent = `${input} — ${action.result.message}`;
+      item.classList.toggle("failed", !action.result.success);
+      item.append(title, details);
+      actionStream.append(item);
     },
     getState() {
       return { ...state };

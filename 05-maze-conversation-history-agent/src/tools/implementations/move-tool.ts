@@ -22,7 +22,7 @@ class MoveTool implements Tool {
         return {
             success: moved,
             message: moved ? "Agent moved successfully." : "Agent could not move in that direction.",
-            data: { position },
+            data: { direction: input.direction as Direction, position },
         };
     }
 }

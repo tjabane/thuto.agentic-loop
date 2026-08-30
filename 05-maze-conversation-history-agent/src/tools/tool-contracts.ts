@@ -11,14 +11,28 @@
  */
 type ToolInputPrimitive = boolean | number | string;
 
+/** A JSON value accepted as a tool argument. */
+type ToolInputValue = ToolInputPrimitive | readonly ToolInputPrimitive[];
+
 /** Schema for one primitive tool argument. */
-interface ToolInputPropertySchema {
+interface ToolInputPrimitivePropertySchema {
     /** JSON primitive type accepted for this argument. */
     readonly type: "boolean" | "number" | "string";
 
     /** Optional finite set of permitted values. */
     readonly enum?: readonly ToolInputPrimitive[];
 }
+
+/** Schema for an array whose elements are primitive values. */
+interface ToolInputArrayPropertySchema {
+    readonly type: "array";
+    readonly items: ToolInputPrimitivePropertySchema;
+}
+
+/** Schema for one supported tool argument. */
+type ToolInputPropertySchema =
+    | ToolInputArrayPropertySchema
+    | ToolInputPrimitivePropertySchema;
 
 interface ToolInputSchema {
     /**
@@ -88,4 +102,13 @@ interface Tool {
     execute(input: unknown): Promise<ToolResult>;
 }
 
-export type { Tool, ToolInputPrimitive, ToolInputPropertySchema, ToolInputSchema, ToolResult };
+export type {
+    Tool,
+    ToolInputArrayPropertySchema,
+    ToolInputPrimitive,
+    ToolInputPrimitivePropertySchema,
+    ToolInputPropertySchema,
+    ToolInputSchema,
+    ToolInputValue,
+    ToolResult,
+};

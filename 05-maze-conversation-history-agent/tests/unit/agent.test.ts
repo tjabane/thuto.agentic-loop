@@ -86,9 +86,9 @@ describe("Agent maze scenarios", () => {
         });
         assert.equal(decisionClient.contexts.length, 5);
         assert.deepEqual(decisionClient.contexts.at(-1), [
-            { success: true, message: "Agent moved successfully.", data: { position: { x: 1, y: 0 } } },
+            { success: true, message: "Agent moved successfully.", data: { direction: "right", position: { x: 1, y: 0 } } },
             { success: true, message: "Key collected." },
-            { success: true, message: "Agent moved successfully.", data: { position: { x: 1, y: 1 } } },
+            { success: true, message: "Agent moved successfully.", data: { direction: "down", position: { x: 1, y: 1 } } },
             { success: true, message: "Exit unlocked." },
         ]);
     });
@@ -112,7 +112,7 @@ describe("Agent maze scenarios", () => {
             {
                 success: false,
                 message: "Agent could not move in that direction.",
-                data: { position: { x: 0, y: 0 } },
+                data: { direction: "right", position: { x: 0, y: 0 } },
             },
         ]);
         assert.equal(decisionClient.contexts[2]?.[1]?.success, true);

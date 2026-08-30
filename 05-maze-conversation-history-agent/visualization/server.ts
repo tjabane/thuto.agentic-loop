@@ -6,76 +6,97 @@ import {
 } from "node:http";
 import { extname, join } from "node:path";
 
-import { Enviroment } from "../../04-maze-llm-agent/src/enviroment.js";
+import { Agent } from "../src/agent.js";
+import { OpenAiDecisionClient } from "../src/decision-client/openai-decision-client.js";
+import { Enviroment } from "../src/enviroment.js";
+import type { Position } from "../src/models/position.js";
+import { GraphTool } from "../src/tools/implementations/graph-tool.js";
+import { InspectCurrentNodeTool } from "../src/tools/implementations/inspect-current-node-tool.js";
+import { MoveTool } from "../src/tools/implementations/move-tool.js";
+import { ReadGraphTool } from "../src/tools/implementations/read-graph-tool.js";
+import { TakeKeyTool } from "../src/tools/implementations/take-key-tool.js";
+import { UnlockExitTool } from "../src/tools/implementations/unlock-exit-tool.js";
+import type { Tool, ToolResult } from "../src/tools/tool-contracts.js";
 import type {
-    Direction,
-    NodeInformation,
-    Position,
-} from "../../04-maze-llm-agent/src/models/position.js";
-import { Agent } from "../../05-maze-conversation-history-agent/src/agent.js";
-import { LLMClient } from "../../05-maze-conversation-history-agent/src/llm/client.js";
-import { createMazeTools } from "../../05-maze-conversation-history-agent/src/tools/maze-tools.js";
-import type {
+    GraphSnapshot,
     MazeConfiguration,
     MazeRunResponse,
-    VisualDirection,
-    VisualEvent,
+    VisualAction,
 } from "./types.js";
 
 const PORT = Number(process.env.VISUALIZATION_PORT ?? 3000);
-const MAX_ACTIONS = Number(process.env.LLM_E2E_MAX_ACTIONS ?? 25);
-const VISUALIZATION_ROOT = join(
-    process.cwd(),
-    "visualizations",
-    "maze-visualization",
-);
-const visualDirections: Record<Direction, VisualDirection> = {
-    up: "north",
-    right: "east",
-    down: "south",
-    left: "west",
-};
+const MAX_ACTIONS = 25;
+const VISUALIZATION_ROOT = join(process.cwd(), "visualization");
+const SYSTEM_PROMPT = `You control an agent in an unknown 3x3 maze through the supplied tools.
+Collect the key, then unlock the exit. Begin by calling inspect_current_node. After every successful move, inspect the new node before another action.
+Use only verified results. Track each verified position and move direction, systematically explore unvisited adjacent cells, and do not repeat a known failed move. Collect a discovered key immediately, then navigate directly to a discovered exit.
+The graph is maintained automatically from successful traversals. You may read it, but prioritise maze actions. Request exactly one tool per turn until the exit is verified unlocked.`;
 
-class TracingEnviroment extends Enviroment {
-    readonly trace: VisualEvent[] = [];
+class TracingTool implements Tool {
+    constructor(
+        private readonly inner: Tool,
+        private readonly enviroment: Enviroment,
+        private readonly graph: GraphTool,
+        private readonly trace: VisualAction[],
+    ) {}
 
-    override inspectCurrentNode(): NodeInformation {
-        const observation = super.inspectCurrentNode();
-        this.trace.push({
-            type: "inspect",
-            position: { ...observation.position },
-        });
-        return observation;
+    public get name(): string {
+        return this.inner.name;
     }
 
-    override move(direction: Direction): Position {
-        const before = this.getState().agentPostion;
-        const result = super.move(direction);
+    public get description(): string {
+        return this.inner.description;
+    }
+
+    public get inputSchema() {
+        return this.inner.inputSchema;
+    }
+
+    public async execute(input: unknown): Promise<ToolResult> {
+        const previousPosition = this.enviroment.getState().agentPostion;
+        const result = await this.inner.execute(input);
+        if (this.inner.name === "move" && result.success) {
+            const position = result.data?.position;
+            if (isPosition(position)) {
+                await this.graph.execute({
+                    node: positionKey(previousPosition),
+                    edges: [positionKey(position)],
+                });
+            }
+        }
+
         this.trace.push({
-            type: "move",
-            direction: visualDirections[direction],
-            succeeded: before.x !== result.x || before.y !== result.y,
+            name: this.inner.name,
+            input,
+            result,
+            graph: readGraph(this.graph),
         });
         return result;
     }
+}
 
-    override takeKey(): boolean {
-        const succeeded = super.takeKey();
-        this.trace.push({ type: "takeKey", succeeded });
-        return succeeded;
-    }
-
-    override unlockExist(): boolean {
-        const succeeded = super.unlockExist();
-        this.trace.push({ type: "unlockExit", succeeded });
-        return succeeded;
-    }
+function positionKey(position: Position): string {
+    return `${position.x},${position.y}`;
 }
 
 function isPosition(value: unknown): value is Position {
     if (typeof value !== "object" || value === null) return false;
     const candidate = value as Record<string, unknown>;
     return Number.isInteger(candidate.x) && Number.isInteger(candidate.y);
+}
+
+function isGraphSnapshot(value: unknown): value is GraphSnapshot {
+    if (typeof value !== "object" || value === null) return false;
+    const candidate = value as Record<string, unknown>;
+    return Array.isArray(candidate.nodes) && Array.isArray(candidate.edges);
+}
+
+function readGraph(graph: GraphTool): GraphSnapshot {
+    const snapshot = graph.read();
+    if (!isGraphSnapshot(snapshot)) {
+        throw new Error("Graph tool returned an invalid graph snapshot.");
+    }
+    return snapshot;
 }
 
 function isMazeConfiguration(value: unknown): value is MazeConfiguration {
@@ -96,81 +117,45 @@ function isMazeConfiguration(value: unknown): value is MazeConfiguration {
 
 async function readJson(request: IncomingMessage): Promise<unknown> {
     const chunks: Buffer[] = [];
-    for await (const chunk of request) {
-        chunks.push(Buffer.from(chunk));
-    }
+    for await (const chunk of request) chunks.push(Buffer.from(chunk));
     return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-function sendJson(
-    response: ServerResponse,
-    status: number,
-    body: unknown,
-): void {
+function sendJson(response: ServerResponse, status: number, body: unknown): void {
     response.writeHead(status, { "Content-Type": "application/json" });
     response.end(JSON.stringify(body));
 }
 
-async function runMaze(
-    configuration: MazeConfiguration,
-): Promise<MazeRunResponse> {
-    const enviroment = new TracingEnviroment(
+async function runMaze(configuration: MazeConfiguration): Promise<MazeRunResponse> {
+    const enviroment = new Enviroment(
         configuration.rows,
         configuration.key,
         configuration.exit,
         new Set(configuration.blockedCells),
     );
-    let actionCount = 0;
-    const tools = createMazeTools(enviroment).map((tool) => ({
-        ...tool,
-        async execute(input: unknown) {
-            actionCount += 1;
-            return tool.execute(input);
-        },
-    }));
-    const client = new LLMClient();
-    const agent = new Agent(
-        `Explore this unknown 3x3 maze through the available tools.
-        Find and take the key, find the exit, and unlock it.
-        Your conversation with the tools is your only memory of the maze.
-        Do not claim completion until unlockExit reports exitUnlocked as true.
-        Request one tool at a time. After the exit is unlocked, return a short final response.`,
-        tools,
-        client,
-    );
+    const graph = new GraphTool();
+    const trace: VisualAction[] = [];
+    const tools = [
+        new MoveTool(enviroment),
+        new TakeKeyTool(enviroment),
+        new UnlockExitTool(enviroment),
+        new InspectCurrentNodeTool(enviroment),
+        graph,
+        new ReadGraphTool(graph),
+    ].map(tool => new TracingTool(tool, enviroment, graph, trace));
 
-    let reachedTurnLimit = false;
-    try {
-        await agent.run(MAX_ACTIONS);
-    } catch (error) {
-        if (
-            error instanceof Error &&
-            error.message === "Maximum number of turns reached"
-        ) {
-            reachedTurnLimit = true;
-        } else {
-            throw error;
-        }
-    }
+    await new Agent(tools, new OpenAiDecisionClient({}, SYSTEM_PROMPT)).run(MAX_ACTIONS);
 
     const finalState = enviroment.getState();
-    const succeeded = !finalState.isExistLocked;
-    const terminationReason = succeeded
-        ? "success"
-        : reachedTurnLimit
-          ? "action_limit"
-          : "incomplete";
-
-    enviroment.trace.push({
-        type: "exit",
-        succeeded,
-    });
-
     return {
-        trace: enviroment.trace,
+        trace,
         finalPosition: { ...finalState.agentPostion },
-        terminationReason,
-        actionCount,
+        terminationReason: !finalState.isExistLocked
+            ? "success"
+            : trace.length >= MAX_ACTIONS
+              ? "action_limit"
+              : "incomplete",
+        actionCount: trace.length,
     };
 }
 
@@ -192,9 +177,7 @@ const server = createServer(async (request, response) => {
         if (request.method === "POST" && request.url === "/api/run") {
             const configuration = await readJson(request);
             if (!isMazeConfiguration(configuration)) {
-                sendJson(response, 400, {
-                    error: "Invalid 3x3 maze configuration.",
-                });
+                sendJson(response, 400, { error: "Invalid 3x3 maze configuration." });
                 return;
             }
             sendJson(response, 200, await runMaze(configuration));
@@ -202,21 +185,20 @@ const server = createServer(async (request, response) => {
         }
 
         const filename = staticFiles[request.url ?? ""];
-        if (request.method !== "GET" || !filename) {
+        if (request.method !== "GET" || filename === undefined) {
             sendJson(response, 404, { error: "Not found." });
             return;
         }
 
         const body = await readFile(join(VISUALIZATION_ROOT, filename));
         response.writeHead(200, {
-            "Content-Type":
-                contentTypes[extname(filename)] ?? "application/octet-stream",
+            "Content-Type": contentTypes[extname(filename)] ?? "application/octet-stream",
         });
         response.end(body);
     } catch (error) {
-        const message =
-            error instanceof Error ? error.message : "Unknown server error.";
-        sendJson(response, 500, { error: message });
+        sendJson(response, 500, {
+            error: error instanceof Error ? error.message : "Unknown server error.",
+        });
     }
 });
 

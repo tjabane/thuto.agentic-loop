@@ -1,5 +1,5 @@
 (() => {
-  // visualizations/maze-visualization/controller.ts
+  // visualization/controller.ts
   var mazeConfiguration = {
     rows: 3,
     columns: 3,
@@ -8,6 +8,7 @@
     key: { x: 2, y: 0 },
     exit: { x: 2, y: 2 }
   };
+  var mazeVisualizer = window.mazeVisualizer;
   var runButton = document.getElementById("autoButton");
   var randomButton = document.getElementById("randomButton");
   var resetButton = document.getElementById("resetButton");
@@ -75,52 +76,57 @@
         return candidate;
     }
   }
-  function describe(event) {
-    switch (event.type) {
-      case "inspect":
-        return `Inspecting (${event.position.x}, ${event.position.y})`;
-      case "takeKey":
-        return event.succeeded ? "Key collected" : "No key in this room";
-      case "unlockExit":
-        return event.succeeded ? "Exit unlocked" : "Exit could not be unlocked";
-      case "exit":
-        return event.succeeded ? "Agent escaped the maze" : "Agent did not escape";
-      case "move":
-        return event.succeeded ? `Moving ${event.direction}` : `Move ${event.direction} blocked`;
+  function applyAction(action) {
+    const direction = action.result.data?.direction;
+    if (action.name === "move" && typeof direction === "string") {
+      const visualDirection = toVisualDirection(direction);
+      if (visualDirection !== undefined) {
+        if (action.result.success)
+          mazeVisualizer.move(visualDirection);
+        else
+          mazeVisualizer.showBlockedMove(visualDirection);
+      }
+    } else if (action.name === "take_key" && action.result.success) {
+      mazeVisualizer.takeKey();
+    } else if (action.name === "unlock_exit" && action.result.success) {
+      mazeVisualizer.unlockExit();
     }
+    mazeVisualizer.updateGraph(action.graph);
+    mazeVisualizer.showAction(action);
+    mazeVisualizer.showMessage(action.result.message);
   }
-  function applyEvent(event) {
-    if (event.type === "move") {
-      if (event.succeeded)
-        window.mazeVisualizer.move(event.direction);
-      else
-        window.mazeVisualizer.showBlockedMove(event.direction);
-    } else if (event.type === "takeKey" && event.succeeded) {
-      window.mazeVisualizer.takeKey();
-    } else if (event.type === "unlockExit" && event.succeeded) {
-      window.mazeVisualizer.unlockExit();
-    } else {
-      window.mazeVisualizer.showMessage(describe(event));
+  function toVisualDirection(direction) {
+    switch (direction) {
+      case "up":
+        return "north";
+      case "right":
+        return "east";
+      case "down":
+        return "south";
+      case "left":
+        return "west";
+      default:
+        return;
     }
   }
   function replay(trace, finalPosition, error) {
     let index = 0;
-    window.mazeVisualizer.reset();
+    mazeVisualizer.reset();
     const next = () => {
-      const event = trace[index];
-      if (event) {
-        applyEvent(event);
+      const action = trace[index];
+      if (action) {
+        applyAction(action);
         index += 1;
         replayTimer = window.setTimeout(next, 450);
         return;
       }
       replayTimer = undefined;
-      window.mazeVisualizer.setState({
+      mazeVisualizer.setState({
         x: finalPosition.x,
         y: finalPosition.y
       });
       if (error)
-        window.mazeVisualizer.showMessage(error);
+        mazeVisualizer.showMessage(error);
       if (runButton) {
         runButton.disabled = false;
         runButton.textContent = "Run LLM agent";
@@ -162,8 +168,8 @@
     if (replayTimer !== undefined)
       return;
     mazeConfiguration = generateRandomMaze();
-    window.mazeVisualizer.configure(mazeConfiguration);
+    mazeVisualizer.configure(mazeConfiguration);
   });
   resetButton?.addEventListener("click", () => window.location.reload());
-  window.mazeVisualizer.showMessage("Ready to run the LLM agent");
+  mazeVisualizer.showMessage("Ready to run the LLM agent");
 })();

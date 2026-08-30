@@ -1,5 +1,11 @@
 import { DIRECTIONS } from "../models/position.js";
-import type { ToolInputPrimitive, ToolInputPropertySchema, ToolInputSchema } from "./tool-contracts.js";
+import type {
+    ToolInputPrimitive,
+    ToolInputPrimitivePropertySchema,
+    ToolInputPropertySchema,
+    ToolInputSchema,
+    ToolInputValue,
+} from "./tool-contracts.js";
 
 /** Schema for tools that do not accept any arguments. */
 const EMPTY_TOOL_INPUT_SCHEMA = {
@@ -19,12 +25,10 @@ const MOVE_TOOL_INPUT_SCHEMA = {
 /**
  * Validates raw model arguments against a tool input schema.
  *
- * The validator deliberately supports the primitive JSON Schema features used
- * by tools: object shape, required properties, primitive property types, and
- * enums. Add a property schema type here before introducing a more complex
- * tool argument shape.
+ * The validator supports object shape, required properties, primitive property
+ * types and enums, plus arrays of primitive values.
  */
-function isValidToolInput(input: unknown, schema: ToolInputSchema): input is Readonly<Record<string, ToolInputPrimitive>> {
+function isValidToolInput(input: unknown, schema: ToolInputSchema): input is Readonly<Record<string, ToolInputValue>> {
     if (!isRecord(input) || !hasRequiredProperties(input, schema)) {
         return false;
     }
@@ -40,6 +44,14 @@ function hasRequiredProperties(input: Record<string, unknown>, schema: ToolInput
 }
 
 function isValidPropertyValue(value: unknown, schema: ToolInputPropertySchema): boolean {
+    if (schema.type === "array") {
+        return Array.isArray(value) && value.every(item => isValidPrimitiveValue(item, schema.items));
+    }
+
+    return isValidPrimitiveValue(value, schema);
+}
+
+function isValidPrimitiveValue(value: unknown, schema: ToolInputPrimitivePropertySchema): boolean {
     if (
         !isToolInputPrimitive(value) ||
         typeof value !== schema.type ||

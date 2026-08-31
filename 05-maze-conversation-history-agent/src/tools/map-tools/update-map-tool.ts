@@ -1,6 +1,6 @@
-import type { MazeMap } from "../../../map/map-contracts.js";
-import { isValidToolInput } from "../../schemas.js";
-import type { Tool, ToolInputValue, ToolResult } from "../../tool-contracts.js";
+import type { MazeMap } from "../../map/map-contracts.js";
+import { isValidToolInput } from "../schemas.js";
+import type { Tool, ToolInputValue, ToolResult } from "../tool-contracts.js";
 
 const UPDATE_MAP_INPUT_SCHEMA = {
     type: "object",

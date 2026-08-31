@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { Enviroment } from "../../../src/enviroment.js";
-import { GetStateTool } from "../../../src/tools/implementations/get-state-tool.js";
-import { InspectCurrentNodeTool } from "../../../src/tools/implementations/inspect-current-node-tool.js";
-import { MoveTool } from "../../../src/tools/implementations/move-tool.js";
-import { NoResultTool } from "../../../src/tools/implementations/no-result-tool.js";
-import { TakeKeyTool } from "../../../src/tools/implementations/take-key-tool.js";
-import { UnlockExitTool } from "../../../src/tools/implementations/unlock-exit-tool.js";
+import { GetStateTool } from "../../../src/tools/environment/get-state-tool.js";
+import { InspectCurrentNodeTool } from "../../../src/tools/environment/inspect-current-node-tool.js";
+import { MoveTool } from "../../../src/tools/environment/move-tool.js";
+import { NoResultTool } from "../../../src/tools/environment/no-result-tool.js";
+import { TakeKeyTool } from "../../../src/tools/environment/take-key-tool.js";
+import { UnlockExitTool } from "../../../src/tools/environment/unlock-exit-tool.js";
 import {
     EMPTY_TOOL_INPUT_SCHEMA,
     isValidToolInput,

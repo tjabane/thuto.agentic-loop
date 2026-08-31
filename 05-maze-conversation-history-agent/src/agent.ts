@@ -1,5 +1,5 @@
 import type { DecisionClient } from "./decision-client/decision-client-contracts.js";
-import { NoResultTool } from "./tools/implementations/no-result-tool.js";
+import { NoResultTool } from "./tools/environment/no-result-tool.js";
 import type { Tool, ToolResult } from "./tools/tool-contracts.js";
 
 /**

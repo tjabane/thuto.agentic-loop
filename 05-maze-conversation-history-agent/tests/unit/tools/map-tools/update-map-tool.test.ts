@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { GraphMap } from "../../../../src/map/graph-map.js";
-import { UpdateMapTool } from "../../../../src/tools/implementations/map-tools/update-map-tool.js";
+import { UpdateMapTool } from "../../../../src/tools/map-tools/update-map-tool.js";
 
 describe("UpdateMapTool", () => {
     test("updates the graph-backed map", async () => {

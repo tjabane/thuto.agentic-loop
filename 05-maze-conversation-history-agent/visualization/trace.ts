@@ -1,6 +1,6 @@
 import type { Position } from "../src/models/position.js";
 import type { MazeMap } from "../src/map/map-contracts.js";
-import { UpdateMapTool } from "../src/tools/implementations/map-tools/update-map-tool.js";
+import { UpdateMapTool } from "../src/tools/map-tools/update-map-tool.js";
 import type { ToolResult } from "../src/tools/tool-contracts.js";
 import type { GraphSnapshot, VisualAction } from "./types.js";
 

@@ -5,7 +5,7 @@ import type OpenAI from "openai";
 
 import { OpenAiDecisionClient } from "../../../src/decision-client/openai-decision-client.js";
 import { GraphMap } from "../../../src/map/graph-map.js";
-import { UpdateMapTool } from "../../../src/tools/implementations/map-tools/update-map-tool.js";
+import { UpdateMapTool } from "../../../src/tools/map-tools/update-map-tool.js";
 import type { Tool } from "../../../src/tools/tool-contracts.js";
 
 const moveTool: Tool = {

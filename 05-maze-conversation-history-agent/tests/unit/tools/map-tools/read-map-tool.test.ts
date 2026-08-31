@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { GraphMap } from "../../../../src/map/graph-map.js";
-import { ReadMapTool } from "../../../../src/tools/implementations/map-tools/read-map-tool.js";
+import { ReadMapTool } from "../../../../src/tools/map-tools/read-map-tool.js";
 
 describe("ReadMapTool", () => {
     test("reads the map without changing it", async () => {

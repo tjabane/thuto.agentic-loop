@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert";
 import { test } from "bun:test";
 
 import { GraphMap } from "../../../src/map/graph-map.js";
-import { UpdateMapTool } from "../../../src/tools/implementations/map-tools/update-map-tool.js";
+import { UpdateMapTool } from "../../../src/tools/map-tools/update-map-tool.js";
 import { appendTraversalGraphUpdate } from "../../../visualization/trace.js";
 
 test("records automatic traversal graph updates in the visual action stream", async () => {

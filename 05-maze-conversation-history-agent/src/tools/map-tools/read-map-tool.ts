@@ -1,6 +1,6 @@
-import type { MazeMap } from "../../../map/map-contracts.js";
-import { EMPTY_TOOL_INPUT_SCHEMA, isValidToolInput } from "../../schemas.js";
-import type { Tool, ToolResult } from "../../tool-contracts.js";
+import type { MazeMap } from "../../map/map-contracts.js";
+import { EMPTY_TOOL_INPUT_SCHEMA, isValidToolInput } from "../schemas.js";
+import type { Tool, ToolResult } from "../tool-contracts.js";
 
 /** Returns the discovered maze map without changing it. */
 class ReadMapTool implements Tool {

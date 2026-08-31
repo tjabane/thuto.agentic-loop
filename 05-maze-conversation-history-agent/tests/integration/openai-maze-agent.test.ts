@@ -5,12 +5,12 @@ import { Agent } from "../../src/agent.js";
 import { OpenAiDecisionClient } from "../../src/decision-client/openai-decision-client.js";
 import { Enviroment } from "../../src/enviroment.js";
 import { GraphMap } from "../../src/map/graph-map.js";
-import { InspectCurrentNodeTool } from "../../src/tools/implementations/inspect-current-node-tool.js";
-import { MoveTool } from "../../src/tools/implementations/move-tool.js";
-import { ReadMapTool } from "../../src/tools/implementations/map-tools/read-map-tool.js";
-import { UpdateMapTool } from "../../src/tools/implementations/map-tools/update-map-tool.js";
-import { TakeKeyTool } from "../../src/tools/implementations/take-key-tool.js";
-import { UnlockExitTool } from "../../src/tools/implementations/unlock-exit-tool.js";
+import { InspectCurrentNodeTool } from "../../src/tools/environment/inspect-current-node-tool.js";
+import { MoveTool } from "../../src/tools/environment/move-tool.js";
+import { ReadMapTool } from "../../src/tools/map-tools/read-map-tool.js";
+import { UpdateMapTool } from "../../src/tools/map-tools/update-map-tool.js";
+import { TakeKeyTool } from "../../src/tools/environment/take-key-tool.js";
+import { UnlockExitTool } from "../../src/tools/environment/unlock-exit-tool.js";
 import type { Tool, ToolResult } from "../../src/tools/tool-contracts.js";
 
 type Position = { readonly x: number; readonly y: number };

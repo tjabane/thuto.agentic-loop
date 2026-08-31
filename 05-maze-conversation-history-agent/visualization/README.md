@@ -12,8 +12,10 @@ bun visualization/server.ts
 Then open `http://localhost:3000`. Use **Random maze** to generate a new solvable
 3-by-3 layout before asking the LLM agent to solve and replay it.
 
-The replay overlays the growing verified traversal graph on the maze and records
-every tool request and verified result in the **Actions stream** below it.
+The replay renders the growing verified traversal graph in its own panel beside
+the maze: room coordinates are vertices and successful traversals are edges.
+Every automatic `graph` update is also recorded in the **Actions stream** below
+the maze.
 
 Rebuild the browser controller after changing the TypeScript implementation:
 

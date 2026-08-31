@@ -18,11 +18,11 @@ import { TakeKeyTool } from "../src/tools/implementations/take-key-tool.js";
 import { UnlockExitTool } from "../src/tools/implementations/unlock-exit-tool.js";
 import type { Tool, ToolResult } from "../src/tools/tool-contracts.js";
 import type {
-    GraphSnapshot,
     MazeConfiguration,
     MazeRunResponse,
     VisualAction,
 } from "./types.js";
+import { appendTraceAction, appendTraversalGraphUpdate } from "./trace.js";
 
 const PORT = Number(process.env.VISUALIZATION_PORT ?? 3000);
 const MAX_ACTIONS = 25;
@@ -55,48 +55,27 @@ class TracingTool implements Tool {
     public async execute(input: unknown): Promise<ToolResult> {
         const previousPosition = this.enviroment.getState().agentPostion;
         const result = await this.inner.execute(input);
+        appendTraceAction(this.trace, this.inner.name, input, result, this.graph);
+
         if (this.inner.name === "move" && result.success) {
             const position = result.data?.position;
             if (isPosition(position)) {
-                await this.graph.execute({
-                    node: positionKey(previousPosition),
-                    edges: [positionKey(position)],
-                });
+                await appendTraversalGraphUpdate(
+                    this.trace,
+                    this.graph,
+                    previousPosition,
+                    position,
+                );
             }
         }
-
-        this.trace.push({
-            name: this.inner.name,
-            input,
-            result,
-            graph: readGraph(this.graph),
-        });
         return result;
     }
-}
-
-function positionKey(position: Position): string {
-    return `${position.x},${position.y}`;
 }
 
 function isPosition(value: unknown): value is Position {
     if (typeof value !== "object" || value === null) return false;
     const candidate = value as Record<string, unknown>;
     return Number.isInteger(candidate.x) && Number.isInteger(candidate.y);
-}
-
-function isGraphSnapshot(value: unknown): value is GraphSnapshot {
-    if (typeof value !== "object" || value === null) return false;
-    const candidate = value as Record<string, unknown>;
-    return Array.isArray(candidate.nodes) && Array.isArray(candidate.edges);
-}
-
-function readGraph(graph: GraphTool): GraphSnapshot {
-    const snapshot = graph.read();
-    if (!isGraphSnapshot(snapshot)) {
-        throw new Error("Graph tool returned an invalid graph snapshot.");
-    }
-    return snapshot;
 }
 
 function isMazeConfiguration(value: unknown): value is MazeConfiguration {

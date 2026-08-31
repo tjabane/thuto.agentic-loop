@@ -25,6 +25,15 @@
         <div id="maze" class="maze" role="img" aria-label="Three by three maze"></div>
       </div>
 
+      <section class="graph-panel" aria-labelledby="graphHeading">
+        <div>
+          <p class="eyebrow">Agent memory</p>
+          <h2 id="graphHeading">Discovered graph</h2>
+          <p>Vertices are rooms; edges are verified traversals.</p>
+        </div>
+        <svg id="graphView" role="img" aria-label="Discovered maze graph"></svg>
+      </section>
+
       <aside class="side-panel">
         <div class="readout">
           <span>Position</span><strong id="positionText">(0, 0)</strong>

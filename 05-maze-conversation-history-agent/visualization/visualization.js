@@ -63,12 +63,6 @@
       }
     }
 
-    const graphOverlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    graphOverlay.id = "graphOverlay";
-    graphOverlay.setAttribute("viewBox", `0 0 ${mazeConfig.columns} ${mazeConfig.rows}`);
-    graphOverlay.setAttribute("aria-hidden", "true");
-    maze.append(graphOverlay);
-
     const agent = document.createElement("div");
     agent.id = "agent";
     agent.className = "agent";
@@ -80,13 +74,14 @@
   function graphPosition(node) {
     const coordinates = /^([0-2]),([0-2])$/.exec(node);
     if (!coordinates) return undefined;
-    return { x: Number(coordinates[1]) + .5, y: Number(coordinates[2]) + .5 };
+    return { x: Number(coordinates[1]) * 100 + 50, y: Number(coordinates[2]) * 100 + 50 };
   }
 
   function renderGraph() {
-    const overlay = document.getElementById("graphOverlay");
-    if (!overlay) return;
-    overlay.replaceChildren();
+    const graphView = document.getElementById("graphView");
+    if (!graphView) return;
+    graphView.replaceChildren();
+    graphView.setAttribute("viewBox", "0 0 300 300");
     for (const edge of graph.edges) {
       if (!Array.isArray(edge) || edge.length !== 2) continue;
       const from = graphPosition(edge[0]);
@@ -98,7 +93,7 @@
       line.setAttribute("x2", String(to.x));
       line.setAttribute("y2", String(to.y));
       line.classList.add("graph-edge");
-      overlay.append(line);
+      graphView.append(line);
     }
     for (const node of graph.nodes) {
       const position = graphPosition(node);
@@ -106,9 +101,16 @@
       const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       circle.setAttribute("cx", String(position.x));
       circle.setAttribute("cy", String(position.y));
-      circle.setAttribute("r", ".09");
+      circle.setAttribute("r", "17");
       circle.classList.add("graph-node");
-      overlay.append(circle);
+      graphView.append(circle);
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", String(position.x));
+      label.setAttribute("y", String(position.y + 5));
+      label.setAttribute("text-anchor", "middle");
+      label.classList.add("graph-label");
+      label.textContent = node;
+      graphView.append(label);
     }
   }
 

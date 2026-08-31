@@ -9,11 +9,13 @@ import { extname, join } from "node:path";
 import { Agent } from "../src/agent.js";
 import { OpenAiDecisionClient } from "../src/decision-client/openai-decision-client.js";
 import { Enviroment } from "../src/enviroment.js";
+import { GraphMap } from "../src/map/graph-map.js";
+import type { MazeMap } from "../src/map/map-contracts.js";
 import type { Position } from "../src/models/position.js";
-import { GraphTool } from "../src/tools/implementations/graph-tool.js";
 import { InspectCurrentNodeTool } from "../src/tools/implementations/inspect-current-node-tool.js";
+import { ReadMapTool } from "../src/tools/implementations/map-tools/read-map-tool.js";
+import { UpdateMapTool } from "../src/tools/implementations/map-tools/update-map-tool.js";
 import { MoveTool } from "../src/tools/implementations/move-tool.js";
-import { ReadGraphTool } from "../src/tools/implementations/read-graph-tool.js";
 import { TakeKeyTool } from "../src/tools/implementations/take-key-tool.js";
 import { UnlockExitTool } from "../src/tools/implementations/unlock-exit-tool.js";
 import type { Tool, ToolResult } from "../src/tools/tool-contracts.js";
@@ -30,13 +32,14 @@ const VISUALIZATION_ROOT = join(process.cwd(), "visualization");
 const SYSTEM_PROMPT = `You control an agent in an unknown 3x3 maze through the supplied tools.
 Collect the key, then unlock the exit. Begin by calling inspect_current_node. After every successful move, inspect the new node before another action.
 Use only verified results. Track each verified position and move direction, systematically explore unvisited adjacent cells, and do not repeat a known failed move. Collect a discovered key immediately, then navigate directly to a discovered exit.
-The graph is maintained automatically from successful traversals. You may read it, but prioritise maze actions. Request exactly one tool per turn until the exit is verified unlocked.`;
+The map is maintained automatically from successful traversals. You may read it, but prioritise maze actions. Request exactly one tool per turn until the exit is verified unlocked.`;
 
 class TracingTool implements Tool {
     constructor(
         private readonly inner: Tool,
         private readonly enviroment: Enviroment,
-        private readonly graph: GraphTool,
+        private readonly map: MazeMap,
+        private readonly updateMapTool: UpdateMapTool,
         private readonly trace: VisualAction[],
     ) {}
 
@@ -55,14 +58,15 @@ class TracingTool implements Tool {
     public async execute(input: unknown): Promise<ToolResult> {
         const previousPosition = this.enviroment.getState().agentPostion;
         const result = await this.inner.execute(input);
-        appendTraceAction(this.trace, this.inner.name, input, result, this.graph);
+        appendTraceAction(this.trace, this.inner.name, input, result, this.map);
 
         if (this.inner.name === "move" && result.success) {
             const position = result.data?.position;
             if (isPosition(position)) {
                 await appendTraversalGraphUpdate(
                     this.trace,
-                    this.graph,
+                    this.map,
+                    this.updateMapTool,
                     previousPosition,
                     position,
                 );
@@ -112,16 +116,17 @@ async function runMaze(configuration: MazeConfiguration): Promise<MazeRunRespons
         configuration.exit,
         new Set(configuration.blockedCells),
     );
-    const graph = new GraphTool();
+    const map = new GraphMap();
+    const updateMapTool = new UpdateMapTool(map);
     const trace: VisualAction[] = [];
     const tools = [
         new MoveTool(enviroment),
         new TakeKeyTool(enviroment),
         new UnlockExitTool(enviroment),
         new InspectCurrentNodeTool(enviroment),
-        graph,
-        new ReadGraphTool(graph),
-    ].map(tool => new TracingTool(tool, enviroment, graph, trace));
+        updateMapTool,
+        new ReadMapTool(map),
+    ].map(tool => new TracingTool(tool, enviroment, map, updateMapTool, trace));
 
     await new Agent(tools, new OpenAiDecisionClient({}, SYSTEM_PROMPT)).run(MAX_ACTIONS);
 

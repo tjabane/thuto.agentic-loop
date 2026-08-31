@@ -14,7 +14,7 @@ Then open `http://localhost:3000`. Use **Random maze** to generate a new solvabl
 
 The replay renders the growing verified traversal graph in its own panel beside
 the maze: room coordinates are vertices and successful traversals are edges.
-Every automatic `graph` update is also recorded in the **Actions stream** below
+Every automatic `update_map` call is also recorded in the **Actions stream** below
 the maze.
 
 Rebuild the browser controller after changing the TypeScript implementation:

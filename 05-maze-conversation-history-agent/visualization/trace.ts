@@ -1,10 +1,11 @@
 import type { Position } from "../src/models/position.js";
-import { GraphTool } from "../src/tools/implementations/graph-tool.js";
+import type { MazeMap } from "../src/map/map-contracts.js";
+import { UpdateMapTool } from "../src/tools/implementations/map-tools/update-map-tool.js";
 import type { ToolResult } from "../src/tools/tool-contracts.js";
 import type { GraphSnapshot, VisualAction } from "./types.js";
 
-function readGraph(graph: GraphTool): GraphSnapshot {
-    const snapshot = graph.read();
+function readGraph(map: MazeMap): GraphSnapshot {
+    const snapshot = map.readMap();
     if (!isGraphSnapshot(snapshot)) {
         throw new Error("Graph tool returned an invalid graph snapshot.");
     }
@@ -16,15 +17,16 @@ function appendTraceAction(
     name: string,
     input: unknown,
     result: ToolResult,
-    graph: GraphTool,
+    map: MazeMap,
 ): void {
-    trace.push({ name, input, result, graph: readGraph(graph) });
+    trace.push({ name, input, result, graph: readGraph(map) });
 }
 
-/** Records the graph tool call used to verify a successful traversal. */
+/** Records the map tool call used to verify a successful traversal. */
 async function appendTraversalGraphUpdate(
     trace: VisualAction[],
-    graph: GraphTool,
+    map: MazeMap,
+    updateMapTool: UpdateMapTool,
     from: Position,
     to: Position,
 ): Promise<void> {
@@ -32,8 +34,8 @@ async function appendTraversalGraphUpdate(
         node: positionKey(from),
         edges: [positionKey(to)],
     };
-    const result = await graph.execute(input);
-    appendTraceAction(trace, graph.name, input, result, graph);
+    const result = await updateMapTool.execute(input);
+    appendTraceAction(trace, updateMapTool.name, input, result, map);
 }
 
 function positionKey(position: Position): string {

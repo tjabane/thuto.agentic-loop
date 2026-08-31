@@ -4,7 +4,8 @@ import { describe, test } from "node:test";
 import type OpenAI from "openai";
 
 import { OpenAiDecisionClient } from "../../../src/decision-client/openai-decision-client.js";
-import { GraphTool } from "../../../src/tools/implementations/graph-tool.js";
+import { GraphMap } from "../../../src/map/graph-map.js";
+import { UpdateMapTool } from "../../../src/tools/implementations/map-tools/update-map-tool.js";
 import type { Tool } from "../../../src/tools/tool-contracts.js";
 
 const moveTool: Tool = {
@@ -78,7 +79,7 @@ describe("OpenAiDecisionClient", () => {
 
     test("serializes array tool properties for the decision provider", async () => {
         let request: unknown;
-        const graphTool = new GraphTool();
+        const mapTool = new UpdateMapTool(new GraphMap());
         const client = new OpenAiDecisionClient(
             {
                 client: createClient({ output: [] }, value => {
@@ -88,13 +89,13 @@ describe("OpenAiDecisionClient", () => {
             TEST_SYSTEM_PROMPT,
         );
 
-        await client.decide([], [graphTool]);
+        await client.decide([], [mapTool]);
 
         assert.deepEqual((request as { tools: unknown[] }).tools[0], {
             type: "function",
-            name: "graph",
+            name: "update_map",
             description:
-                "Add a node and its adjacent edge nodes, then return the full discovered undirected graph.",
+                "Add a room and its adjacent rooms, then return the full discovered map.",
             parameters: {
                 type: "object",
                 properties: {
